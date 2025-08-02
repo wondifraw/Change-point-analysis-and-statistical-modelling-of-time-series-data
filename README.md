@@ -28,26 +28,31 @@ This project implements a complete workflow for analyzing Brent oil prices to id
 │       ├── ci.yml                 # Testing pipeline
 │       ├── deploy.yml             # Documentation deployment
 │       └── release.yml            # Release automation
-├── 📁 data/
+├── 📁 data/                       # Data storage (immutable raw, processed)
 │   ├── 📁 raw/
 │   │   └── BrentOilPrices.csv     # Original oil price data
 │   └── 📁 processed/
 │       └── events.csv             # Compiled geopolitical events
-├── 📁 notebooks/
+├── 📁 notebooks/                  # Jupyter notebooks for exploration
 │   ├── 01_data_workflow_analysis.ipynb    # Complete workflow demo
 │   ├── 02_events_analysis.ipynb           # Events analysis
 │   └── 03_change_point_comparison.ipynb   # Methods comparison
-├── 📁 src/
+├── 📁 src/                        # Source code modules
 │   ├── data_workflow.py          # Main workflow orchestrator
 │   ├── event_compiler.py         # Geopolitical events compilation
 │   ├── time_series_analyzer.py   # Time series properties analysis
 │   └── change_point_model.py     # Change point detection models
-├── 📁 tests/
-│   └── test_workflow.py          # Unit tests
-├── 📁 output/
-│   ├── changepoint_analysis.png  # Sample change point visualization
-│   └── events_timeline.png       # Sample events timeline plot
+├── 📁 scripts/                    # Automation scripts
+│   └── run_analysis.py           # Automated analysis runner
+├── 📁 tests/                      # Unit tests
+│   └── test_workflow.py          # Test suite
+├── 📁 outputs/                    # Generated files and results
+│   ├── 📁 figures/               # Visualizations and plots
+│   └── 📁 models/                # Saved model outputs
+├── 📁 docs/                       # Project documentation
+│   └── methodology.md            # Analysis methodology
 ├── 📄 main.py                    # Main execution script
+├── 📄 Makefile                   # Workflow automation
 ├── 📄 requirements.txt           # Python dependencies
 ├── 📄 environment.yml            # Conda environment
 ├── 📄 setup.py                   # Package installation
@@ -117,6 +122,20 @@ pytest tests/
 pytest tests/ --cov=src --cov-report=html
 ```
 
+### Automated Workflows
+```bash
+# Using Makefile (recommended)
+make install    # Install dependencies
+make data       # Process data
+make analysis   # Run complete analysis
+make test       # Run tests
+make lint       # Check code style
+make all        # Run everything
+
+# Using scripts
+python scripts/run_analysis.py
+```
+
 ## Sample Input and Output
 
 ### Input Data Format
@@ -169,10 +188,10 @@ Change dates: ['2008-09-15', '2014-11-27', '2020-03-06']
 
 **Events Timeline**:
 
-![Events Timeline](outputs//events_timeline.png)
+![Events Timeline](outputs/figures/events_timeline.png)
 
 **Brent Oil Prices Over Time**
-![Brent Oil Prices](outputs/brent_oil_prices_timeline.png)
+![Brent Oil Prices](outputs/figures/brent_oil_prices_timeline.png)
 
 *Visualization of major oil market events categorized by type (Geopolitical, Economic, OPEC Decisions) plotted over time to show the relationship between events and potential market disruptions.*
 
