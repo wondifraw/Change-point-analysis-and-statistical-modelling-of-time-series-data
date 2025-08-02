@@ -8,8 +8,8 @@ install:
 
 # Clean generated files
 clean:
-	rm -rf outputs/figures/*
-	rm -rf outputs/models/*
+	rm -rf results/figures/*
+	rm -rf results/models/*
 	rm -f analysis.log
 	rm -rf __pycache__/
 	rm -rf .pytest_cache/
