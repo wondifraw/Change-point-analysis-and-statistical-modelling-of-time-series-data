@@ -47,7 +47,6 @@ analysis.log
 *.png
 *.jpg
 *.pdf
-results/
 temp/
 data/
 *.log
