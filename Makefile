@@ -20,7 +20,7 @@ data:
 
 # Run complete analysis
 analysis:
-	python main.py
+	python changepoint_detection.py
 
 # Run tests
 test:
