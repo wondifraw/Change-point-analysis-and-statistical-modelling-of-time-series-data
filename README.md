@@ -44,6 +44,9 @@ This project implements a complete workflow for analyzing Brent oil prices to id
 │   └── change_point_model.py     # Change point detection models
 ├── 📁 tests/
 │   └── test_workflow.py          # Unit tests
+├── 📁 output/
+│   ├── changepoint_analysis.png  # Sample change point visualization
+│   └── events_timeline.png       # Sample events timeline plot
 ├── 📄 main.py                    # Main execution script
 ├── 📄 requirements.txt           # Python dependencies
 ├── 📄 environment.yml            # Conda environment
@@ -161,6 +164,17 @@ Change dates: ['2008-09-15', '2014-11-27', '2020-03-06']
 - `analysis.log` - Detailed execution log
 - `data/processed/events.csv` - Compiled events dataset
 - Notebook outputs with visualizations and analysis results
+
+### Sample Visualization
+
+**Events Timeline**:
+
+![Events Timeline](outputs//events_timeline.png)
+
+**Brent Oil Prices Over Time**
+![Brent Oil Prices](outputs/brent_oil_prices_timeline.png)
+
+*Visualization of major oil market events categorized by type (Geopolitical, Economic, OPEC Decisions) plotted over time to show the relationship between events and potential market disruptions.*
 
 ## Key Components
 
