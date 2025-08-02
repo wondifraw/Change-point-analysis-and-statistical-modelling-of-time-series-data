@@ -1,74 +1,74 @@
-# Contributing to Brent Oil Change Point Analysis
+# Contributing
 
-We welcome contributions to improve this project! Here's how you can help:
+## Branch Naming Strategy
 
-## Getting Started
+- `feature/description` - New features
+- `fix/description` - Bug fixes
+- `docs/description` - Documentation updates
+- `test/description` - Test improvements
 
-1. **Fork the repository** on GitHub
-2. **Clone your fork** locally:
-   ```bash
-   git clone https://github.com/your-username/Change-point-analysis-and-statistical-modelling-of-time-series-data.git
-   ```
-3. **Create a new branch** for your feature:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+Example: `feature/add-arima-model` or `fix/memory-leak`
 
-## Development Setup
+## How to Submit PRs
 
-1. **Install development dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   pip install pytest pytest-cov flake8 black
-   ```
+1. Fork the repository
+2. Create a branch: `git checkout -b feature/your-feature`
+3. Make changes and commit: `git commit -m "Add: brief description"`
+4. Push: `git push origin feature/your-feature`
+5. Open a Pull Request with:
+   - Clear title and description
+   - Reference related issues (#123)
+   - List of changes made
 
-2. **Run tests** to ensure everything works:
-   ```bash
-   pytest tests/
-   ```
+## Code Style Guidelines
 
-## Making Changes
+- **Follow PEP 8** for Python code formatting
+- **Use descriptive names** for variables and functions
+- **Add docstrings** to all functions and classes
+- **Include type hints** where possible
+- **Keep functions small** and focused on single tasks
 
-1. **Write your code** following the existing style
-2. **Add tests** for new functionality in `tests/`
-3. **Update documentation** if needed
-4. **Run quality checks**:
-   ```bash
-   # Code formatting
-   black src/ tests/
-   
-   # Linting
-   flake8 src/ tests/
-   
-   # Tests
-   pytest tests/ --cov=src
-   ```
+```python
+def analyze_trend(data: pd.DataFrame) -> Dict[str, float]:
+    """Analyze trend in time series data.
+    
+    Args:
+        data: DataFrame with 'date' and 'price' columns
+        
+    Returns:
+        Dictionary with trend analysis results
+    """
+```
 
-## Submitting Changes
+## Testing Instructions
 
-1. **Commit your changes**:
-   ```bash
-   git add .
-   git commit -m "Add: brief description of changes"
-   ```
+### Run Tests
+```bash
+# All tests
+pytest tests/
 
-2. **Push to your fork**:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
+# With coverage
+pytest tests/ --cov=src --cov-report=html
 
-3. **Open a Pull Request** on GitHub with:
-   - Clear description of changes
-   - Reference to any related issues
-   - Screenshots if applicable
+# Specific test file
+pytest tests/test_workflow.py
+```
 
-## Code Style
+### Add Tests
+- Create test files in `tests/` directory
+- Name test functions with `test_` prefix
+- Test both success and failure cases
+- Aim for >80% code coverage
 
-- Follow PEP 8 guidelines
-- Use descriptive variable names
-- Add docstrings to functions and classes
-- Include type hints where appropriate
+### Code Quality Checks
+```bash
+# Linting
+flake8 src/ tests/
+
+# Type checking (optional)
+mypy src/
+```
 
 ## Questions?
 
-Open an issue for discussion before making major changes.
+Open an issue for discussion before major changes.
