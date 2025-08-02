@@ -17,44 +17,145 @@ This project implements a complete workflow for analyzing Brent oil prices to id
 ## Project Structure
 
 ```
-├── src/
+📦 Change-point-analysis-and-statistical-modelling-of-time-series-data/
+├── 📁 .github/
+│   └── 📁 workflows/              # CI/CD automation
+│       ├── ci.yml                 # Testing pipeline
+│       ├── deploy.yml             # Documentation deployment
+│       └── release.yml            # Release automation
+├── 📁 data/
+│   ├── 📁 raw/
+│   │   └── BrentOilPrices.csv     # Original oil price data
+│   └── 📁 processed/
+│       └── events.csv             # Compiled geopolitical events
+├── 📁 notebooks/
+│   ├── 01_data_workflow_analysis.ipynb    # Complete workflow demo
+│   ├── 02_events_analysis.ipynb           # Events analysis
+│   └── 03_change_point_comparison.ipynb   # Methods comparison
+├── 📁 src/
 │   ├── data_workflow.py          # Main workflow orchestrator
 │   ├── event_compiler.py         # Geopolitical events compilation
 │   ├── time_series_analyzer.py   # Time series properties analysis
 │   └── change_point_model.py     # Change point detection models
-├── notebooks/
-│   ├── 01_data_workflow_analysis.ipynb    # Complete workflow demo
-│   ├── 02_events_analysis.ipynb           # Events analysis
-│   └── 03_change_point_comparison.ipynb   # Methods comparison
-├── data/
-│   ├── raw/
-│   │   └── BrentOilPrices.csv
-│   └── processed/
-│       └── events.csv
-├── main.py                       # Main execution script
-└── requirements.txt              # Dependencies
+├── 📁 tests/
+│   └── test_workflow.py          # Unit tests
+├── 📄 main.py                    # Main execution script
+├── 📄 requirements.txt           # Python dependencies
+├── 📄 environment.yml            # Conda environment
+├── 📄 setup.py                   # Package installation
+├── 📄 .gitignore                 # Git ignore rules
+└── 📄 README.md                  # Project documentation
 ```
 
-## Installation
+## Installation & Setup
 
-1. Clone the repository
-2. Install dependencies:
+**Requirements**: Python 3.8+ (Python 3.9 recommended)
+
+### Option 1: Using pip
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd Change-point-analysis-and-statistical-modelling-of-time-series-data
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
+```
+
+### Option 2: Using conda
+```bash
+# Clone the repository
+git clone <repository-url>
+cd Change-point-analysis-and-statistical-modelling-of-time-series-data
+
+# Create conda environment
+conda env create -f environment.yml
+conda activate brent-oil-analysis
+```
+
+### Option 3: Development installation
+```bash
+# For development with editable install
+pip install -e .
 ```
 
 ## Usage
 
-### Quick Start
-```python
+### Complete Analysis Pipeline
+```bash
+# Run the complete analysis (recommended for first-time users)
 python main.py
 ```
+**Expected output**: Analysis results in console, processed data in `data/processed/`, and log file `analysis.log`
 
-### Jupyter Notebooks
+### Interactive Analysis
 ```bash
+# Launch Jupyter notebooks for step-by-step analysis
 cd notebooks
-jupyter notebook 01_data_workflow_analysis.ipynb
+jupyter notebook
+
+# Start with: 01_data_workflow_analysis.ipynb
 ```
+
+### Testing
+```bash
+# Run all tests
+pytest tests/
+
+# Run tests with coverage
+pytest tests/ --cov=src --cov-report=html
+```
+
+## Sample Input and Output
+
+### Input Data Format
+
+**Brent Oil Prices (`data/raw/BrentOilPrices.csv`)**:
+```csv
+Date,Price
+1987-05-20,18.63
+1987-05-21,18.45
+1987-05-22,18.55
+...
+2022-11-14,92.61
+```
+
+**Compiled Events (`data/processed/events.csv`)**:
+```csv
+date,event,category,impact
+1990-08-02,Iraq invasion of Kuwait,Geopolitical,High
+2001-09-11,September 11 attacks,Geopolitical,High
+2008-09-15,Lehman Brothers collapse,Economic,High
+...
+```
+
+### Expected Output
+
+**Console Output (from `python main.py`)**:
+```
+=== ANALYSIS SUMMARY ===
+Events compiled: 15
+Change points detected: 3
+Key assumptions: 4
+Identified limitations: 5
+
+=== TIME SERIES PROPERTIES ===
+Trend Analysis: {'trend_slope': 0.023, 'trend_significance': True}
+Stationarity Test: {'is_stationary': False, 'p_value': 0.342}
+
+=== CHANGE POINT DETECTION ===
+Method: PELT
+Change points detected: 3
+Change dates: ['2008-09-15', '2014-11-27', '2020-03-06']
+```
+
+**Generated Files**:
+- `analysis.log` - Detailed execution log
+- `data/processed/events.csv` - Compiled events dataset
+- Notebook outputs with visualizations and analysis results
 
 ## Key Components
 
@@ -133,6 +234,37 @@ Results can be communicated through:
 3. Interactive visualizations for exploratory analysis
 4. Presentation slides for stakeholder meetings
 
+## Testing
+
+Run the test suite to validate functionality:
+
+```bash
+# Run all tests
+pytest tests/
+
+# Run with coverage report
+pytest tests/ --cov=src --cov-report=html
+
+# View coverage report
+open htmlcov/index.html  # On Windows: start htmlcov/index.html
+```
+
+**Test Coverage**: The project includes unit tests for core components:
+- Event compilation and validation
+- Time series analysis functions
+- Change point detection methods
+- Workflow orchestration
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+- Setting up development environment
+- Code style and standards
+- Submitting pull requests
+- Reporting issues
+
 ## License
 
-This project is for educational and research purposes.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+**Academic Use**: This project is designed for educational and research purposes in time series analysis and change point detection.
