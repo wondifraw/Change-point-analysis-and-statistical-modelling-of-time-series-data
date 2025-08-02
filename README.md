@@ -51,7 +51,7 @@ This project implements a complete workflow for analyzing Brent oil prices to id
 │   └── 📁 models/                # Saved model outputs
 ├── 📁 docs/                       # Project documentation
 │   └── methodology.md            # Analysis methodology
-├── 📄 main.py                    # Main execution script
+├── 📄 changepoint_detection.py    # Main execution script
 ├── 📄 Makefile                   # Workflow automation
 ├── 📄 requirements.txt           # Python dependencies
 ├── 📄 environment.yml            # Conda environment
@@ -131,7 +131,7 @@ pip install -e .
 
 5. **Run Analysis**
    ```bash
-   python main.py
+   python changepoint_detection.py
    ```
 
 ### Expected Results
@@ -150,7 +150,7 @@ pip install -e .
 ### Complete Analysis Pipeline
 ```bash
 # Run the complete analysis (recommended for first-time users)
-python main.py
+python changepoint_detection.py
 ```
 **Expected output**: Analysis results in console, processed data in `data/processed/`, and log file `analysis.log`
 
@@ -211,7 +211,7 @@ date,event,category,impact
 
 ### Expected Output
 
-**Console Output (from `python main.py`)**:
+**Console Output (from `python changepoint_detection.py`)**:
 ```
 === ANALYSIS SUMMARY ===
 Events compiled: 15
@@ -313,7 +313,7 @@ src/data_workflow.py          → src/event_compiler.py
                              → src/time_series_analyzer.py  
                              → src/change_point_model.py
 
-main.py                      → src/data_workflow.py
+changepoint_detection.py     → src/data_workflow.py
                              → data/raw/brent_oil_prices.csv
 
 notebooks/*.ipynb            → src/* (all modules)
