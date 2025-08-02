@@ -27,7 +27,7 @@ def main():
     """Execute the complete analysis workflow."""
     try:
         # Initialize paths
-        data_path = "data/raw/BrentOilPrices.csv"
+        data_path = "data/raw/brent_oil_prices.csv"
         events_path = "data/processed/events.csv"
         
         logging.info("Starting Brent oil price change point analysis")
