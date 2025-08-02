@@ -24,7 +24,7 @@ def main():
         print(f"✓ Compiled {len(events_df)} events")
         
         # Run workflow
-        workflow = DataAnalysisWorkflow("data/raw/BrentOilPrices.csv")
+        workflow = DataAnalysisWorkflow("data/raw/brent_oil_prices.csv")
         results = workflow.execute_workflow()
         print("✓ Analysis completed successfully")
         
