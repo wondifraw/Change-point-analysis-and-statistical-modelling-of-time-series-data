@@ -30,7 +30,7 @@ This project implements a complete workflow for analyzing Brent oil prices to id
 │       └── release.yml            # Release automation
 ├── 📁 data/                       # Data storage (immutable raw, processed)
 │   ├── 📁 raw/
-│   │   └── BrentOilPrices.csv     # Original oil price data
+│   │   └── brent_oil_prices.csv   # Original oil price data
 │   └── 📁 processed/
 │       └── events.csv             # Compiled geopolitical events
 ├── 📁 notebooks/                  # Jupyter notebooks for exploration
@@ -46,7 +46,7 @@ This project implements a complete workflow for analyzing Brent oil prices to id
 │   └── run_analysis.py           # Automated analysis runner
 ├── 📁 tests/                      # Unit tests
 │   └── test_workflow.py          # Test suite
-├── 📁 outputs/                    # Generated files and results
+├── 📁 results/                    # Generated files and results
 │   ├── 📁 figures/               # Visualizations and plots
 │   └── 📁 models/                # Saved model outputs
 ├── 📁 docs/                       # Project documentation
@@ -95,6 +95,56 @@ conda activate brent-oil-analysis
 pip install -e .
 ```
 
+## Step-by-Step Replication Guide
+
+### Prerequisites
+- Python 3.8+ installed
+- Git installed
+- 2GB free disk space
+
+### Complete Setup (5 minutes)
+
+1. **Clone and Navigate**
+   ```bash
+   git clone <repository-url>
+   cd Change-point-analysis-and-statistical-modelling-of-time-series-data
+   ```
+
+2. **Create Environment**
+   ```bash
+   python -m venv venv
+   # Windows:
+   venv\Scripts\activate
+   # macOS/Linux:
+   source venv/bin/activate
+   ```
+
+3. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Verify Installation**
+   ```bash
+   python -c "import pandas, numpy, scipy; print('✓ Setup complete')"
+   ```
+
+5. **Run Analysis**
+   ```bash
+   python main.py
+   ```
+
+### Expected Results
+- Console output with analysis summary
+- `data/processed/events.csv` created
+- `analysis.log` generated
+- Results in `results/` directory
+
+### Troubleshooting
+- **Import errors**: Ensure virtual environment is activated
+- **Permission errors**: Run with appropriate permissions
+- **Missing data**: Check `data/raw/brent_oil_prices.csv` exists
+
 ## Usage
 
 ### Complete Analysis Pipeline
@@ -140,7 +190,7 @@ python scripts/run_analysis.py
 
 ### Input Data Format
 
-**Brent Oil Prices (`data/raw/BrentOilPrices.csv`)**:
+**Brent Oil Prices (`data/raw/brent_oil_prices.csv`)**:
 ```csv
 Date,Price
 1987-05-20,18.63
@@ -188,10 +238,10 @@ Change dates: ['2008-09-15', '2014-11-27', '2020-03-06']
 
 **Events Timeline**:
 
-![Events Timeline](outputs/figures/events_timeline.png)
+![Events Timeline](results/figures/events_timeline.png)
 
 **Brent Oil Prices Over Time**
-![Brent Oil Prices](outputs/figures/brent_oil_prices_timeline.png)
+![Brent Oil Prices](results/figures/brent_oil_prices_timeline.png)
 
 *Visualization of major oil market events categorized by type (Geopolitical, Economic, OPEC Decisions) plotted over time to show the relationship between events and potential market disruptions.*
 
@@ -255,6 +305,39 @@ This analysis identifies **statistical correlations** between events and price c
 - Additional empirical evidence
 - Domain expertise for interpretation
 
+## File Dependencies
+
+### Core Dependencies
+```
+src/data_workflow.py          → src/event_compiler.py
+                             → src/time_series_analyzer.py  
+                             → src/change_point_model.py
+
+main.py                      → src/data_workflow.py
+                             → data/raw/brent_oil_prices.csv
+
+notebooks/*.ipynb            → src/* (all modules)
+                             → data/raw/brent_oil_prices.csv
+```
+
+### Data Flow
+```
+data/raw/brent_oil_prices.csv → src/event_compiler.py → data/processed/events.csv
+                              → src/time_series_analyzer.py → analysis results
+                              → src/change_point_model.py → change points
+                              → results/figures/*.png
+```
+
+### Required Files for Execution
+- `data/raw/brent_oil_prices.csv` (input data)
+- `src/*.py` (all source modules)
+- `requirements.txt` (dependencies)
+
+### Generated Files
+- `data/processed/events.csv` (compiled events)
+- `analysis.log` (execution log)
+- `results/figures/*.png` (visualizations)
+
 ## Dependencies
 
 - pandas >= 1.5.0
@@ -263,6 +346,9 @@ This analysis identifies **statistical correlations** between events and price c
 - statsmodels >= 0.13.0
 - matplotlib >= 3.5.0
 - seaborn >= 0.11.0
+- jupyter >= 1.0.0
+- nbval >= 0.9.6
+- papermill >= 2.4.0
 
 ## Communication Channels
 
