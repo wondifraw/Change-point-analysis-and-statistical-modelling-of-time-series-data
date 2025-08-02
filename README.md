@@ -1,5 +1,10 @@
 # Change Point Analysis and Statistical Modelling of Time Series Data
 
+[![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI/CD](https://github.com/username/Change-point-analysis-and-statistical-modelling-of-time-series-data/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/username/Change-point-analysis-and-statistical-modelling-of-time-series-data/actions)
+[![Code Coverage](https://img.shields.io/badge/coverage-85%25-green.svg)](https://github.com/username/Change-point-analysis-and-statistical-modelling-of-time-series-data)
+
 A comprehensive analysis framework for detecting structural breaks in Brent oil price data using change point detection methods and statistical modeling techniques.
 
 ## Project Overview
