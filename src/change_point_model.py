@@ -10,6 +10,10 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple, Optional
 import logging
+try:
+    from scipy.stats import ttest_ind
+except ImportError:
+    ttest_ind = None
 
 class ChangePointModel:
     """
@@ -142,8 +146,11 @@ class ChangePointModel:
                 after = prices[i:i+window_size]
                 
                 # T-test for mean difference
-                from scipy.stats import ttest_ind
-                t_stat, p_value = ttest_ind(before, after)
+                if ttest_ind is None:
+                    # Fallback to simple variance comparison
+                    p_value = 0.05 if abs(np.mean(before) - np.mean(after)) > np.std(before) else 0.5
+                else:
+                    t_stat, p_value = ttest_ind(before, after)
                 
                 if p_value < 0.01:  # Significant change
                     change_points.append(i)
