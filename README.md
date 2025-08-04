@@ -15,6 +15,9 @@ This project implements a complete workflow for analyzing Brent oil prices to id
 
 - **Modular Architecture**: Clean, maintainable code with comprehensive error handling
 - **Multiple Change Point Methods**: PELT, Binary Segmentation, and Sliding Window detection
+- **Bayesian Analysis**: Advanced Bayesian change point detection (Task 2)
+- **Web Dashboard**: Interactive Flask-based dashboard with real-time visualizations
+- **REST API**: Complete API endpoints for data access and integration
 - **Event Analysis**: 15+ major oil market events with structured data
 - **Time Series Analysis**: Trend, stationarity, and volatility analysis
 - **Interactive Notebooks**: Ready-to-run Jupyter notebooks for analysis
@@ -38,6 +41,15 @@ This project implements a complete workflow for analyzing Brent oil prices to id
 │   ├── 02_events_analysis.ipynb           # Events analysis
 │   └── 03_change_point_comparison.ipynb   # Methods comparison
 ├── 📁 src/                        # Source code modules
+│   ├── 📁 task2/                 # Bayesian analysis components
+│   │   ├── bayesian_model.py     # PyMC3-based Bayesian change point model
+│   │   ├── bayesian_model_simple.py # Simplified Bayesian model (no PyMC3)
+│   │   └── event_association.py  # Event-change point association
+│   ├── 📁 task3/                 # Web application components
+│   │   ├── 📁 backend/           # Flask API server
+│   │   │   └── app.py            # Main Flask application
+│   │   └── 📁 frontend/          # Web dashboard
+│   │       └── dashboard.html    # Interactive HTML dashboard
 │   ├── data_workflow.py          # Main workflow orchestrator
 │   ├── event_compiler.py         # Geopolitical events compilation
 │   ├── time_series_analyzer.py   # Time series properties analysis
@@ -135,10 +147,13 @@ pip install -e .
    ```
 
 ### Expected Results
-- Console output with analysis summary
-- `data/processed/events.csv` created
-- `analysis.log` generated
-- Results in `results/` directory
+- **Web Dashboard**: Interactive visualization at `http://127.0.0.1:5000/dashboard`
+- **API Access**: REST endpoints available at `http://127.0.0.1:5000/api/*`
+- **Console Output**: Analysis summary with detected change points
+- **Generated Files**: 
+  - `data/processed/events.csv` - Compiled events dataset
+  - `analysis.log` - Detailed execution log
+  - Results in `results/` directory
 
 ### Troubleshooting
 - **Import errors**: Ensure virtual environment is activated
@@ -147,20 +162,53 @@ pip install -e .
 
 ## Usage
 
-### Complete Analysis Pipeline
+### 🌐 Web Dashboard (Recommended)
 ```bash
-# Run the complete analysis (recommended for first-time users)
+# Start the Flask web application
+cd src/task3/backend
+python app.py
+
+# Open browser and navigate to:
+# http://127.0.0.1:5000/dashboard
+```
+**Features**: Interactive charts, real-time data, change point visualization, event timeline
+
+### 📊 API Access
+```bash
+# Health check
+curl http://127.0.0.1:5000/api/health
+
+# Get oil prices
+curl "http://127.0.0.1:5000/api/oil-prices?start_date=2020-01-01"
+
+# Get events
+curl http://127.0.0.1:5000/api/events
+
+# Get change points
+curl http://127.0.0.1:5000/api/change-points
+```
+
+### 🔬 Complete Analysis Pipeline
+```bash
+# Run the complete analysis (command-line)
 python changepoint_detection.py
 ```
 **Expected output**: Analysis results in console, processed data in `data/processed/`, and log file `analysis.log`
 
-### Interactive Analysis
+### 📓 Interactive Analysis
 ```bash
 # Launch Jupyter notebooks for step-by-step analysis
 cd notebooks
 jupyter notebook
 
 # Start with: 01_data_workflow_analysis.ipynb
+```
+
+### 🧠 Bayesian Analysis (Task 2)
+```bash
+# Run Bayesian change point analysis
+cd src/task2
+python run_task2.py
 ```
 
 ### Testing
@@ -269,6 +317,24 @@ Change dates: ['2008-09-15', '2014-11-27', '2020-03-06']
 - Sliding Window approach
 - Expected outputs and limitations documentation
 
+### 5. Bayesian Analysis (`src/task2/`)
+- **bayesian_model.py**: PyMC3-based Bayesian change point detection
+- **bayesian_model_simple.py**: Simplified version without PyMC3 dependency
+- **event_association.py**: Associates detected change points with geopolitical events
+- Quantifies uncertainty in change point locations
+
+### 6. Web Application (`src/task3/`)
+- **Flask Backend (`backend/app.py`)**:
+  - RESTful API with 6 endpoints
+  - Real-time data processing
+  - CORS-enabled for frontend integration
+  - Comprehensive error handling
+- **Interactive Dashboard (`frontend/dashboard.html`)**:
+  - Real-time price charts using Chart.js
+  - Summary statistics display
+  - Change point visualization
+  - Event timeline with filtering
+
 ## Major Events Analyzed
 
 - Iraq invasion of Kuwait (1990)
@@ -340,6 +406,7 @@ data/raw/brent_oil_prices.csv → src/event_compiler.py → data/processed/event
 
 ## Dependencies
 
+### Core Dependencies
 - pandas >= 1.5.0
 - numpy >= 1.21.0
 - scipy >= 1.9.0
@@ -347,16 +414,55 @@ data/raw/brent_oil_prices.csv → src/event_compiler.py → data/processed/event
 - matplotlib >= 3.5.0
 - seaborn >= 0.11.0
 - jupyter >= 1.0.0
+
+### Web Application
+- flask >= 2.0.0
+- flask-cors >= 3.0.0
+
+### Bayesian Analysis (Optional)
+- pymc3 >= 3.11.0 (for full Bayesian model)
+- theano-pymc >= 1.1.0
+
+### Development & Testing
+- pytest >= 6.0.0
 - nbval >= 0.9.6
 - papermill >= 2.4.0
+
+## API Endpoints
+
+The Flask backend provides the following REST API endpoints:
+
+| Endpoint | Method | Description |
+|----------|--------|--------------|
+| `/` | GET | API information and available endpoints |
+| `/dashboard` | GET | Interactive web dashboard |
+| `/api/health` | GET | System health check |
+| `/api/oil-prices` | GET | Brent oil price data with optional date filtering |
+| `/api/events` | GET | Geopolitical events with category/impact filtering |
+| `/api/change-points` | GET | Detected change points with statistical measures |
+| `/api/analysis-summary` | GET | Comprehensive analysis summary |
+| `/api/event-impact-analysis` | GET | Event-price correlation analysis |
+
+### Example API Usage
+```bash
+# Get recent oil prices
+curl "http://127.0.0.1:5000/api/oil-prices?start_date=2022-01-01&end_date=2022-12-31"
+
+# Filter high-impact geopolitical events
+curl "http://127.0.0.1:5000/api/events?category=Geopolitical&impact=High"
+
+# Get comprehensive analysis summary
+curl "http://127.0.0.1:5000/api/analysis-summary"
+```
 
 ## Communication Channels
 
 Results can be communicated through:
-1. Executive dashboard with key metrics
-2. Technical report with detailed methodology
-3. Interactive visualizations for exploratory analysis
-4. Presentation slides for stakeholder meetings
+1. **Interactive Web Dashboard** - Real-time visualization at `/dashboard`
+2. **REST API** - Programmatic access to all analysis results
+3. **Executive Summary** - Key metrics via `/api/analysis-summary`
+4. **Technical Reports** - Detailed methodology in Jupyter notebooks
+5. **Presentation Slides** - Stakeholder-ready visualizations
 
 ## Testing
 
@@ -392,3 +498,34 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 **Academic Use**: This project is designed for educational and research purposes in time series analysis and change point detection.
+
+## Quick Start
+
+1. **Clone and setup**:
+   ```bash
+   git clone <repository-url>
+   cd Change-point-analysis-and-statistical-modelling-of-time-series-data
+   pip install -r requirements.txt
+   ```
+
+2. **Launch web dashboard**:
+   ```bash
+   cd src/task3/backend
+   python app.py
+   ```
+
+3. **Open browser**: `http://127.0.0.1:5000/dashboard`
+
+4. **Explore the analysis**: Interactive charts, change points, and event correlations
+
+## Architecture Overview
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Data Layer    │    │  Analysis Layer  │    │   Web Layer     │
+│                 │    │                  │    │                 │
+│ • Oil Prices    │───▶│ • Change Points  │───▶│ • Flask API     │
+│ • Events Data   │    │ • Bayesian Model │    │ • Dashboard     │
+│ • Processed     │    │ • Event Analysis │    │ • Visualizations│
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
