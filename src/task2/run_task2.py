@@ -1,134 +1,57 @@
+#!/usr/bin/env python3
 """
-Task 2 Main Runner - Bayesian Change Point Analysis
-Reuses Task 1 infrastructure with minimal additions
+Task 2 Runner - Bayesian Change Point Analysis
+Executes Bayesian inference for change point detection
 """
 
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
+try:
+    from bayesian_model import BayesianChangePoint
+    print("✓ Using full Bayesian model with PyMC3")
+except ImportError:
+    from bayesian_model_simple import BayesianChangePoint
+    print("✓ Using simplified Bayesian model")
+
+from bayesian_inference import BayesianChangePointMCMC
 import pandas as pd
 import numpy as np
-from datetime import datetime
-from bayesian_model import BayesianChangePoint, associate_with_events
-from data_workflow import DataWorkflow
 
-def run_task2_analysis():
-    """Run complete Task 2 analysis pipeline"""
+def main():
+    """Run Bayesian change point analysis"""
+    print("🧠 Starting Bayesian Change Point Analysis")
     
-    print("=" * 60)
-    print("TASK 2: BAYESIAN CHANGE POINT ANALYSIS")
-    print("=" * 60)
-    
-    # Initialize workflow (reuse Task 1)
-    workflow = DataWorkflow()
-    
-    # Load and prepare data
-    print("\n1. Loading and preparing data...")
-    oil_data = pd.read_csv("data/raw/brent_oil_prices.csv")
-    
-    # Handle date parsing
-    try:
-        oil_data['Date'] = pd.to_datetime(oil_data['Date'], format='%d-%b-%y')
-    except:
-        try:
-            oil_data['Date'] = pd.to_datetime(oil_data['Date'], format='%b %d, %Y')
-        except:
-            oil_data['Date'] = pd.to_datetime(oil_data['Date'])
-    
-    oil_data = oil_data.sort_values('Date').reset_index(drop=True)
-    print(f"   Data loaded: {len(oil_data)} observations from {oil_data['Date'].min()} to {oil_data['Date'].max()}")
-    
-    # Initialize Bayesian model
-    print("\n2. Building Bayesian change point model...")
-    model = BayesianChangePoint("data/raw/brent_oil_prices.csv")
-    model.build_model()
-    
-    # Fit model
-    print("   Fitting model with MCMC sampling...")
-    model.fit(draws=1000)
-    print("   Model fitted successfully")
-    
-    # Get change point and impact
-    print("\n3. Analyzing change point...")
-    impact = model.quantify_impact()
-    change_date = impact['change_date']
-    
-    # Load events (reuse Task 1)
-    print("\n4. Loading geopolitical events...")
-    events_df = workflow.event_compiler.compile_major_events()
-    print(f"   Loaded {len(events_df)} major events")
-    
-    # Associate with events
-    print("\n5. Associating change point with events...")
-    closest_event, days_diff = associate_with_events(change_date, events_df)
-    
-    # Generate results
-    print("\n" + "=" * 60)
-    print("RESULTS SUMMARY")
-    print("=" * 60)
-    
-    print(f"\nMost Probable Change Point: {change_date.strftime('%Y-%m-%d')}")
-    print(f"Price Impact:")
-    print(f"  - Before change: ${impact['before_mean']:.2f}")
-    print(f"  - After change:  ${impact['after_mean']:.2f}")
-    print(f"  - Change amount: ${impact['after_mean'] - impact['before_mean']:.2f}")
-    print(f"  - Percentage change: {impact['change_percent']:.1f}%")
-    
-    if closest_event is not None:
-        print(f"\nAssociated Event:")
-        print(f"  - Event: {closest_event['event']}")
-        print(f"  - Date: {closest_event['date'].strftime('%Y-%m-%d')}")
-        print(f"  - Category: {closest_event['category']}")
-        print(f"  - Impact Level: {closest_event['impact']}")
-        print(f"  - Days from change point: {days_diff}")
-        
-        # Generate hypothesis
-        direction = "before" if (closest_event['date'] - change_date).days < 0 else "after"
-        print(f"\nHypothesis:")
-        print(f"Following the {closest_event['event']} around {closest_event['date'].strftime('%Y-%m-%d')}, "
-              f"the model detects a change point, with the average daily price shifting "
-              f"from ${impact['before_mean']:.2f} to ${impact['after_mean']:.2f}, "
-              f"an {'increase' if impact['change_percent'] > 0 else 'decrease'} of {abs(impact['change_percent']):.1f}%.")
+    # Load data
+    data_path = "../../data/raw/brent_oil_prices.csv"
+    if os.path.exists(data_path):
+        data = pd.read_csv(data_path)
+        prices = data['Price'].values
     else:
-        print(f"\nNo major events found within 30 days of the change point.")
-        print("This change may be due to:")
-        print("  - Cumulative effects of multiple smaller events")
-        print("  - Market sentiment changes")
-        print("  - Technical trading factors")
-        print("  - Unidentified external factors")
+        # Synthetic data
+        np.random.seed(42)
+        prices = np.concatenate([
+            np.random.normal(50, 5, 100),
+            np.random.normal(70, 8, 100),
+            np.random.normal(60, 6, 100)
+        ])
+        print("⚠️ Using synthetic data")
     
-    # Key assumptions and limitations
-    print(f"\n" + "=" * 60)
-    print("KEY ASSUMPTIONS & LIMITATIONS")
-    print("=" * 60)
+    # Run MCMC analysis
+    mcmc_model = BayesianChangePointMCMC(prices)
+    results = mcmc_model.mcmc_sample(n_samples=1000, burn_in=200)
     
-    assumptions = workflow.get_assumptions()
-    limitations = workflow.get_limitations()
+    print(f"\n📊 MCMC Results:")
+    print(f"Acceptance rate: {results['acceptance_rate']:.2%}")
+    print(f"Most probable # change points: {results['posterior_stats']['most_probable_n_changepoints']}")
     
-    print("\nKey Assumptions:")
-    for i, assumption in enumerate(assumptions, 1):
-        print(f"  {i}. {assumption}")
+    # Get point estimates
+    estimates = mcmc_model.get_point_estimates()
+    if estimates['most_probable_changepoints']:
+        print(f"Change points: {estimates['most_probable_changepoints']}")
     
-    print("\nCritical Limitations:")
-    for i, limitation in enumerate(limitations, 1):
-        print(f"  {i}. {limitation}")
-    
-    print(f"\n" + "=" * 60)
-    print("CORRELATION vs CAUSATION")
-    print("=" * 60)
-    print("IMPORTANT: This analysis identifies statistical correlations between")
-    print("events and price changes but CANNOT establish causation. Change point")
-    print("detection shows when statistical properties change, but proving that")
-    print("specific events caused these changes requires additional evidence.")
-    
-    return {
-        'change_date': change_date,
-        'impact': impact,
-        'closest_event': closest_event,
-        'days_diff': days_diff,
-        'model': model
-    }
+    return results
 
 if __name__ == "__main__":
-    results = run_task2_analysis()
+    main()
