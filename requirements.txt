@@ -1,9 +1,39 @@
-pandas>=1.5.0
-numpy>=1.21.0
-scipy>=1.9.0
-statsmodels>=0.13.0
-matplotlib>=3.5.0
-seaborn>=0.11.0
-jupyter>=1.0.0
-nbval>=0.9.6
-papermill>=2.4.0
+# Core Data Science Libraries
+pandas >= 1.5.0
+numpy >= 1.21.0
+scipy >= 1.9.0
+statsmodels >= 0.13.0
+matplotlib >= 3.5.0
+seaborn >= 0.11.0
+scikit-learn >= 1.1.0
+
+# Web Application Framework
+flask >= 2.0.0
+flask-cors >= 3.0.0
+werkzeug >= 2.0.0
+
+# Jupyter and Notebook Support
+jupyter >= 1.0.0
+ipykernel >= 6.0.0
+nbval >= 0.9.6
+papermill >= 2.4.0
+
+# Testing and Quality Assurance
+pytest >= 6.0.0
+pytest-cov >= 3.0.0
+flake8 >= 4.0.0
+black >= 22.0.0
+
+# Optional Bayesian Analysis (PyMC3 ecosystem)
+# Uncomment if you want full Bayesian functionality
+# pymc3 >= 3.11.0
+# theano-pymc >= 1.1.0
+# arviz >= 0.12.0
+
+# Development and Documentation
+sphinx >= 4.0.0
+sphinx-rtd-theme >= 1.0.0
+
+# Data Validation and Type Checking
+pydantic >= 1.9.0
+mypy >= 0.950
