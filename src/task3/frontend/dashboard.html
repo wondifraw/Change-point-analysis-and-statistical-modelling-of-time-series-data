@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brent Oil Price Analysis Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .card { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .stat-item { text-align: center; padding: 15px; background: #f8f9fa; border-radius: 5px; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #007bff; }
+        .chart-container { height: 400px; margin: 20px 0; }
+        .events-list { max-height: 300px; overflow-y: auto; }
+        .event-item { padding: 10px; border-left: 4px solid #007bff; margin: 5px 0; background: #f8f9fa; }
+        .loading { text-align: center; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛢️ Brent Oil Price Analysis Dashboard</h1>
+            <p>Change Point Detection & Geopolitical Events Analysis</p>
+        </div>
+
+        <div class="card">
+            <h2>📊 Summary Statistics</h2>
+            <div id="summary-stats" class="stats">
+                <div class="loading">Loading statistics...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📈 Oil Price Timeline</h2>
+            <div class="chart-container">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🎯 Change Points Detected</h2>
+            <div id="change-points">
+                <div class="loading">Loading change points...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🌍 Major Geopolitical Events</h2>
+            <div id="events-list" class="events-list">
+                <div class="loading">Loading events...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:5000/api';
+
+        // Load summary statistics
+        async function loadSummary() {
+            try {
+                const response = await fetch(`${API_BASE}/analysis-summary`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.data;
+                    document.getElementById('summary-stats').innerHTML = `
+                        <div class="stat-item">
+                            <div class="stat-value">${stats.data_overview.total_observations.toLocaleString()}</div>
+                            <div>Total Observations</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">$${stats.price_statistics.mean.toFixed(2)}</div>
+                            <div>Average Price</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${stats.analysis_results.change_points_detected}</div>
+                            <div>Change Points</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${stats.analysis_results.events_analyzed}</div>
+                            <div>Events Analyzed</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${stats.data_overview.years_covered}</div>
+                            <div>Years Covered</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${(stats.price_statistics.volatility * 100).toFixed(2)}%</div>
+                            <div>Daily Volatility</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('summary-stats').innerHTML = '<div style="color: red;">Error loading statistics</div>';
+            }
+        }
+
+        // Load and display price chart
+        async function loadPriceChart() {
+            try {
+                const response = await fetch(`${API_BASE}/oil-prices?start_date=2020-01-01`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const ctx = document.getElementById('priceChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.data.map(d => d.date),
+                            datasets: [{
+                                label: 'Brent Oil Price (USD)',
+                                data: data.data.map(d => d.price),
+                                borderColor: '#007bff',
+                                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: false,
+                                    title: { display: true, text: 'Price (USD)' }
+                                },
+                                x: {
+                                    title: { display: true, text: 'Date' }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading price chart:', error);
+            }
+        }
+
+        // Load change points
+        async function loadChangePoints() {
+            try {
+                const response = await fetch(`${API_BASE}/change-points`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const html = data.data.map(cp => `
+                        <div class="event-item">
+                            <strong>📍 ${cp.date}</strong><br>
+                            Method: ${cp.method}<br>
+                            Price Change: ${cp.change_percent.toFixed(1)}% 
+                            ($${cp.before_mean.toFixed(2)} → $${cp.after_mean.toFixed(2)})
+                        </div>
+                    `).join('');
+                    document.getElementById('change-points').innerHTML = html || '<div>No change points detected</div>';
+                }
+            } catch (error) {
+                document.getElementById('change-points').innerHTML = '<div style="color: red;">Error loading change points</div>';
+            }
+        }
+
+        // Load events
+        async function loadEvents() {
+            try {
+                const response = await fetch(`${API_BASE}/events`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const html = data.data.map(event => `
+                        <div class="event-item">
+                            <strong>${event.date}</strong> - ${event.event}<br>
+                            <small>Category: ${event.category} | Impact: ${event.impact}</small>
+                        </div>
+                    `).join('');
+                    document.getElementById('events-list').innerHTML = html;
+                }
+            } catch (error) {
+                document.getElementById('events-list').innerHTML = '<div style="color: red;">Error loading events</div>';
+            }
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSummary();
+            loadPriceChart();
+            loadChangePoints();
+            loadEvents();
+        });
+    </script>
+</body>
+</html>
