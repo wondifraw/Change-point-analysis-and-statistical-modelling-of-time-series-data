@@ -1,0 +1,21 @@
+change_point_date,change_point_index,event_date,event,category,impact_level,days_difference,price_change_percent
+1990-06-18,785,1990-08-02,Iraq invasion of Kuwait,Geopolitical,High,45,198.79722934712308
+1990-08-28,836,1990-08-02,Iraq invasion of Kuwait,Geopolitical,High,-26,196.4810584938812
+2001-08-24,3620,2001-09-11,September 11 attacks,Geopolitical,High,18,254.58109245245407
+2001-11-05,3671,2001-09-11,September 11 attacks,Geopolitical,High,-55,255.78793985567026
+2003-01-30,3985,2003-03-20,Iraq War begins,Geopolitical,High,49,262.07836946315865
+2003-04-11,4036,2003-03-20,Iraq War begins,Geopolitical,High,-22,261.6129685462589
+2008-08-18,5404,2008-09-15,Lehman Brothers collapse,Economic,High,28,154.23715599106345
+2008-10-29,5455,2008-09-15,Lehman Brothers collapse,Economic,High,-44,148.82151570409107
+2010-12-07,5985,2010-12-17,Arab Spring begins,Geopolitical,Medium,10,128.5147866767601
+2011-02-18,6036,2011-03-19,Libya civil war intervention,Geopolitical,Medium,29,124.08478649505987
+2011-05-06,6087,2011-03-19,Libya civil war intervention,Geopolitical,Medium,-48,117.60603416993108
+2014-11-10,6970,2014-11-27,OPEC maintains production,OPEC Decision,High,17,39.94785149521854
+2015-01-26,7021,2014-11-27,OPEC maintains production,OPEC Decision,High,-60,39.51508816693023
+2016-12-05,7498,2016-11-30,OPEC production cut agreement,OPEC Decision,High,-5,48.99529526004871
+2018-05-02,7856,2018-05-08,US withdraws from Iran nuclear deal,Geopolitical,Medium,6,53.43810298054738
+2020-03-04,8327,2020-03-06,OPEC+ deal collapse,OPEC Decision,High,2,53.24406152053752
+2020-03-04,8327,2020-03-11,WHO declares COVID-19 pandemic,Economic,High,7,53.24406152053752
+2020-03-04,8327,2020-04-20,WTI oil futures turn negative,Economic,High,47,53.24406152053752
+2020-05-19,8378,2020-04-20,WTI oil futures turn negative,Economic,High,-29,61.75990482943878
+2022-02-18,8825,2022-02-24,Russia invades Ukraine,Geopolitical,High,6,124.37436899619733
