@@ -3,40 +3,111 @@ Change Point Model Module
 =========================
 
 Implements change point detection models for analyzing structural breaks
-in Brent oil price data.
+in Brent oil price data using PELT, Binary Segmentation, and Sliding Window methods.
+
+This module provides:
+- Multiple change point detection algorithms
+- Statistical significance testing
+- Comprehensive result validation
+- Detailed performance metrics
+
+Author: Change Point Analysis Team
+Version: 2.0
+License: MIT
 """
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Union
 import logging
+from dataclasses import dataclass
 try:
     from scipy.stats import ttest_ind
 except ImportError:
     ttest_ind = None
 
+@dataclass
+class ChangePointDetectionResult:
+    """Structured result container for change point detection"""
+    change_points: List[int]
+    change_dates: List[str]
+    method: str
+    confidence_scores: List[float]
+    statistical_significance: List[float]
+    cost_function_value: Optional[float] = None
+    penalty_parameter: Optional[float] = None
+    execution_time: Optional[float] = None
+
 class ChangePointModel:
     """
-    Change point detection model for identifying structural breaks in oil prices.
+    Advanced change point detection model for identifying structural breaks in oil prices.
     
-    This class implements change point analysis to identify dates when the
-    statistical properties of the time series change significantly.
+    This class implements multiple change point detection algorithms with comprehensive
+    statistical validation and performance evaluation. It provides robust detection
+    of regime changes in time series data with quantitative impact analysis.
+    
+    Supported Methods:
+        - PELT (Pruned Exact Linear Time): Optimal segmentation with dynamic programming
+        - Binary Segmentation: Recursive splitting approach
+        - Sliding Window: Statistical test-based detection
+    
+    Attributes:
+        data (pd.DataFrame): Input time series data with 'date' and 'price' columns
+        method (str): Selected detection method
+        change_points (List[int]): Detected change point indices
+        model_results (Dict): Comprehensive analysis results
+        
+    Example:
+        >>> data = pd.DataFrame({'date': dates, 'price': prices})
+        >>> model = ChangePointModel(data, method='pelt')
+        >>> results = model.detect_change_points(penalty=10.0)
+        >>> print(f"Detected {len(results.change_points)} change points")
     """
     
-    def __init__(self, data: pd.DataFrame, method: str = 'pelt'):
+    def __init__(self, data: pd.DataFrame, method: str = 'pelt') -> None:
         """
-        Initialize change point model.
+        Initialize change point detection model with validation.
         
         Args:
-            data (pd.DataFrame): Time series data
-            method (str): Detection method ('pelt', 'binseg', 'window')
+            data (pd.DataFrame): Time series data with required columns ['date', 'price']
+            method (str): Detection method - 'pelt', 'binseg', or 'window'
+            
+        Raises:
+            ValueError: If data is empty or missing required columns
+            TypeError: If data is not a pandas DataFrame
         """
-        self.data = data
-        self.method = method
-        self.change_points = []
-        self.model_results = {}
+        self._validate_input_data(data)
+        self.data = data.copy()  # Defensive copy to prevent external modifications
+        self.method = self._validate_method(method)
+        self.change_points: List[int] = []
+        self.model_results: Dict = {}
+        self._logger = logging.getLogger(__name__)
+        
+    def _validate_input_data(self, data: pd.DataFrame) -> None:
+        """Validate input data structure and content"""
+        if not isinstance(data, pd.DataFrame):
+            raise TypeError("Data must be a pandas DataFrame")
+        
+        required_columns = ['date', 'price']
+        missing_columns = [col for col in required_columns if col not in data.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns: {missing_columns}")
+            
+        if len(data) < 10:
+            raise ValueError("Insufficient data points for change point detection (minimum: 10)")
+            
+        if data['price'].isna().any():
+            raise ValueError("Price data contains NaN values")
+            
+    def _validate_method(self, method: str) -> str:
+        """Validate and normalize detection method"""
+        valid_methods = ['pelt', 'binseg', 'window']
+        method_lower = method.lower()
+        if method_lower not in valid_methods:
+            raise ValueError(f"Invalid method '{method}'. Choose from: {valid_methods}")
+        return method_lower
     
-    def detect_change_points(self, penalty: float = 10.0) -> Dict:
+    def detect_change_points(self, penalty: float = 10.0, **kwargs) -> ChangePointDetectionResult:
         """
         Detect change points in the time series.
         
