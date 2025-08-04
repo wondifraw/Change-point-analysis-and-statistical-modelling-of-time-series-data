@@ -1,17 +1,22 @@
+#!/usr/bin/env python3
 """
-Main Analysis Script
-===================
-
-Orchestrates the complete Brent oil price change point analysis workflow.
+Main Change Point Detection Script
+Orchestrates the complete Brent oil price analysis workflow
 """
 
 import pandas as pd
+import numpy as np
 import logging
+import sys
+import os
 from pathlib import Path
-from src.data_workflow import DataAnalysisWorkflow
-from src.event_compiler import EventCompiler
-from src.time_series_analyzer import TimeSeriesAnalyzer
-from src.change_point_model import ChangePointModel
+
+# Add src to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
+from data_workflow import DataAnalysisWorkflow
+from event_compiler import EventCompiler
+from change_point_model import ChangePointModel
 
 # Configure logging
 logging.basicConfig(
@@ -24,79 +29,54 @@ logging.basicConfig(
 )
 
 def main():
-    """Execute the complete analysis workflow."""
+    """Execute the complete analysis workflow"""
     try:
-        # Initialize paths
-        data_path = "data/raw/brent_oil_prices.csv"
-        events_path = "data/processed/events.csv"
-        
         logging.info("Starting Brent oil price change point analysis")
         
-        # Step 1: Initialize workflow
-        workflow = DataAnalysisWorkflow(data_path, events_path)
-        
-        # Step 2: Compile events data
-        event_compiler = EventCompiler(events_path)
+        # Step 1: Compile events
+        event_compiler = EventCompiler()
         events_df = event_compiler.compile_major_events()
-        validation = event_compiler.validate_events_data(events_df)
         
-        if not validation.get('has_minimum_events', False):
-            raise ValueError("Insufficient events data compiled")
-        
-        # Step 3: Load and analyze time series data
-        try:
+        # Step 2: Load oil data
+        data_path = "data/raw/brent_oil_prices.csv"
+        if os.path.exists(data_path):
             oil_data = pd.read_csv(data_path)
             oil_data['Date'] = pd.to_datetime(oil_data['Date'])
             oil_data = oil_data.rename(columns={'Date': 'date', 'Price': 'price'})
-            
-            # Analyze time series properties
-            ts_analyzer = TimeSeriesAnalyzer(oil_data)
-            properties = ts_analyzer.analyze_properties()
-            
-            logging.info("Time series properties analysis completed")
-            
-        except FileNotFoundError:
-            logging.warning("Oil price data not found, using synthetic data for demonstration")
+        else:
             # Create synthetic data for demonstration
             dates = pd.date_range('2000-01-01', '2023-12-31', freq='D')
             prices = 50 + np.random.randn(len(dates)).cumsum() * 2
             oil_data = pd.DataFrame({'date': dates, 'price': prices})
-            
-            ts_analyzer = TimeSeriesAnalyzer(oil_data)
-            properties = ts_analyzer.analyze_properties()
+            logging.warning("Using synthetic data - place real data in data/raw/brent_oil_prices.csv")
         
-        # Step 4: Change point analysis
+        # Step 3: Change point analysis
         cp_model = ChangePointModel(oil_data, method='pelt')
-        change_points = cp_model.detect_change_points(penalty=15.0)
-        expected_outputs = cp_model.get_expected_outputs()
+        results = cp_model.detect_change_points(penalty=15.0)
         
-        # Step 5: Execute complete workflow
+        # Step 4: Initialize workflow
+        workflow = DataAnalysisWorkflow(data_path)
         workflow_results = workflow.execute_workflow()
         
-        # Step 6: Summary results
-        results_summary = {
-            'workflow_status': 'Completed',
-            'events_compiled': len(events_df),
-            'time_series_properties': properties,
-            'change_points_detected': len(change_points.get('change_points', [])),
-            'assumptions': workflow.assumptions,
-            'limitations': workflow.limitations,
-            'expected_outputs': expected_outputs
-        }
-        
-        logging.info("Analysis workflow completed successfully")
+        # Summary
         print("\n=== ANALYSIS SUMMARY ===")
-        print(f"Events compiled: {results_summary['events_compiled']}")
-        print(f"Change points detected: {results_summary['change_points_detected']}")
-        print(f"Key assumptions: {len(results_summary['assumptions'])}")
-        print(f"Identified limitations: {len(results_summary['limitations'])}")
+        print(f"Events compiled: {len(events_df)}")
+        print(f"Change points detected: {len(results.get('change_points', []))}")
+        print(f"Key assumptions: {len(workflow.assumptions)}")
+        print(f"Identified limitations: {len(workflow.limitations)}")
         
-        return results_summary
+        if results.get('change_points'):
+            print(f"\n=== CHANGE POINT DETECTION ===")
+            print(f"Method: {results.get('method', 'Unknown')}")
+            print(f"Change points detected: {len(results['change_points'])}")
+            print(f"Change dates: {results.get('change_dates', [])}")
+        
+        logging.info("Analysis completed successfully")
+        return results
         
     except Exception as e:
-        logging.error(f"Analysis workflow failed: {str(e)}")
+        logging.error(f"Analysis failed: {str(e)}")
         raise
 
 if __name__ == "__main__":
-    import numpy as np
-    results = main()
+    main()
