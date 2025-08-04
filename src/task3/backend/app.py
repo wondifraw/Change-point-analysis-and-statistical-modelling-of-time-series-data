@@ -174,6 +174,11 @@ def root():
         'message': 'Brent Oil Price Analysis API',
         'version': '1.0',
         'dashboard': '/dashboard',
+        'advanced_endpoints': {
+            'detect': 'POST /api/detect',
+            'upload': 'POST /api/upload',
+            'methods_comparison': 'GET /api/methods-comparison'
+        },
         'endpoints': {
             'health': '/api/health',
             'oil_prices': '/api/oil-prices',
@@ -186,13 +191,175 @@ def root():
 
 @app.route('/dashboard')
 def dashboard():
-    """Serve the dashboard HTML"""
+    """Serve the interactive dashboard HTML"""
     dashboard_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dashboard.html')
     try:
         with open(dashboard_path, 'r', encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
         return jsonify({'error': 'Dashboard not found'}), 404
+
+@app.route('/api/detect', methods=['POST'])
+def detect_change_points_api():
+    """Advanced change point detection with custom parameters"""
+    try:
+        data = request.get_json()
+        
+        # Validate input
+        if not data or 'time_series' not in data:
+            return jsonify({'success': False, 'error': 'Missing time_series data'}), 400
+        
+        # Extract parameters
+        time_series = data['time_series']
+        method = data.get('method', 'pelt')
+        penalty = data.get('penalty', 10.0)
+        
+        # Convert to DataFrame
+        df = pd.DataFrame(time_series)
+        if 'date' not in df.columns or 'price' not in df.columns:
+            return jsonify({'success': False, 'error': 'Data must contain date and price columns'}), 400
+        
+        df['date'] = pd.to_datetime(df['date'])
+        
+        # Run detection
+        if ChangePointModel is None:
+            return jsonify({'success': False, 'error': 'Change point model not available'}), 500
+            
+        cp_model = ChangePointModel(df.rename(columns={'date': 'date', 'price': 'price'}), method=method)
+        results = cp_model.detect_change_points(penalty=penalty)
+        
+        # Format response
+        response_data = {
+            'change_points': results.get('change_points', []),
+            'change_dates': results.get('change_dates', []),
+            'method': results.get('method', method),
+            'parameters': {'penalty': penalty},
+            'statistics': {
+                'total_points': len(df),
+                'change_points_detected': len(results.get('change_points', [])),
+                'detection_rate': len(results.get('change_points', [])) / len(df) * 100
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': response_data,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in change point detection API: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/upload', methods=['POST'])
+def upload_time_series():
+    """Upload and validate time series data"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No file selected'}), 400
+        
+        # Read CSV file
+        try:
+            df = pd.read_csv(file)
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'Error reading CSV: {str(e)}'}), 400
+        
+        # Validate structure
+        required_columns = ['Date', 'Price']
+        if not all(col in df.columns for col in required_columns):
+            return jsonify({
+                'success': False, 
+                'error': f'CSV must contain columns: {required_columns}',
+                'found_columns': list(df.columns)
+            }), 400
+        
+        # Basic statistics
+        stats = {
+            'total_records': len(df),
+            'date_range': {
+                'start': df['Date'].min(),
+                'end': df['Date'].max()
+            },
+            'price_stats': {
+                'min': float(df['Price'].min()),
+                'max': float(df['Price'].max()),
+                'mean': float(df['Price'].mean()),
+                'std': float(df['Price'].std())
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'message': 'File uploaded and validated successfully',
+            'statistics': stats,
+            'preview': df.head(5).to_dict('records')
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in file upload: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/methods-comparison')
+def compare_detection_methods():
+    """Compare performance of different change point detection methods"""
+    try:
+        oil_data = get_oil_data()
+        if oil_data is None:
+            return jsonify({'success': False, 'error': 'Failed to load data'}), 500
+        
+        if ChangePointModel is None:
+            return jsonify({'success': False, 'error': 'Change point model not available'}), 500
+        
+        methods = ['pelt', 'binseg', 'window']
+        comparison_results = {}
+        
+        for method in methods:
+            try:
+                cp_model = ChangePointModel(oil_data.rename(columns={'Date': 'date', 'Price': 'price'}), method=method)
+                results = cp_model.detect_change_points(penalty=10.0)
+                
+                comparison_results[method] = {
+                    'change_points_count': len(results.get('change_points', [])),
+                    'change_points': results.get('change_points', []),
+                    'change_dates': results.get('change_dates', []),
+                    'method_specific_params': results.get('method_specific_params', {})
+                }
+            except Exception as e:
+                comparison_results[method] = {'error': str(e)}
+        
+        # Calculate consensus points
+        all_points = []
+        for method, result in comparison_results.items():
+            if 'change_points' in result:
+                all_points.extend(result['change_points'])
+        
+        # Find points detected by multiple methods (within 30 days tolerance)
+        consensus_points = []
+        for point in set(all_points):
+            count = sum(1 for p in all_points if abs(p - point) <= 30)
+            if count > 1:
+                consensus_points.append({'point': point, 'agreement_count': count})
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'method_results': comparison_results,
+                'consensus_points': consensus_points,
+                'summary': {
+                    'methods_compared': len(methods),
+                    'total_unique_points': len(set(all_points)),
+                    'consensus_points_count': len(consensus_points)
+                }
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in methods comparison: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/health')
 def health_check():
@@ -378,6 +545,278 @@ def get_analysis_summary():
         logger.error(f"Error in get_analysis_summary: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/detect', methods=['POST'])
+def detect_change_points():
+    """Detect change points in uploaded time series data"""
+    try:
+        data = request.get_json()
+        if not data or 'time_series' not in data:
+            return jsonify({'success': False, 'error': 'No time series data provided'}), 400
+        
+        # Parse input data
+        ts_data = data['time_series']
+        method = data.get('method', 'pelt')
+        penalty = data.get('penalty', 10.0)
+        
+        # Convert to DataFrame
+        if isinstance(ts_data, list):
+            df = pd.DataFrame({
+                'date': pd.date_range('2020-01-01', periods=len(ts_data), freq='D'),
+                'price': ts_data
+            })
+        else:
+            df = pd.DataFrame(ts_data)
+        
+        # Run change point detection
+        if ChangePointModel is None:
+            return jsonify({'success': False, 'error': 'Change point model not available'}), 500
+        
+        cp_model = ChangePointModel(df.rename(columns={'date': 'date', 'price': 'price'}), method=method)
+        results = cp_model.detect_change_points(penalty=penalty)
+        
+        return jsonify({
+            'success': True,
+            'method': method,
+            'penalty': penalty,
+            'change_points': results.get('change_points', []),
+            'metadata': {
+                'data_length': len(df),
+                'method_used': results.get('method', method)
+            }
+        })
+    
+    except Exception as e:
+        logger.error(f"Error in detect endpoint: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/upload', methods=['POST'])
+def upload_data():
+    """Upload CSV file for analysis"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No file selected'}), 400
+        
+        # Read CSV data
+        df = pd.read_csv(file)
+        
+        # Validate required columns
+        if 'Date' not in df.columns or 'Price' not in df.columns:
+            return jsonify({
+                'success': False, 
+                'error': 'CSV must contain Date and Price columns'
+            }), 400
+        
+        # Process data
+        df['Date'] = pd.to_datetime(df['Date'])
+        df = df.sort_values('Date').reset_index(drop=True)
+        
+        # Store in cache for analysis
+        _data_cache['uploaded_data'] = df
+        
+        return jsonify({
+            'success': True,
+            'message': 'File uploaded successfully',
+            'data_info': {
+                'rows': len(df),
+                'date_range': {
+                    'start': df['Date'].min().strftime('%Y-%m-%d'),
+                    'end': df['Date'].max().strftime('%Y-%m-%d')
+                },
+                'price_stats': {
+                    'min': float(df['Price'].min()),
+                    'max': float(df['Price'].max()),
+                    'mean': float(df['Price'].mean())
+                }
+            }
+        })
+    
+    except Exception as e:
+        logger.error(f"Error in upload endpoint: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/model-comparison')
+def get_model_comparison():
+    """Compare different change point detection methods"""
+    try:
+        oil_data = get_oil_data()
+        if oil_data is None or ChangePointModel is None:
+            return jsonify({'success': False, 'error': 'Required data or model not available'}), 500
+        
+        methods = ['pelt', 'binseg', 'window']
+        comparison_results = {}
+        
+        for method in methods:
+            try:
+                cp_model = ChangePointModel(oil_data.rename(columns={'Date': 'date', 'Price': 'price'}), method=method)
+                results = cp_model.detect_change_points(penalty=10.0)
+                
+                comparison_results[method] = {
+                    'change_points': results.get('change_points', []),
+                    'method_name': results.get('method', method),
+                    'num_change_points': len(results.get('change_points', [])),
+                    'parameters': results.get('penalty', 10.0) if 'penalty' in results else results.get('window_size', 'N/A')
+                }
+            except Exception as e:
+                logger.warning(f"Error with method {method}: {e}")
+                comparison_results[method] = {'error': str(e)}
+        
+        return jsonify({
+            'success': True,
+            'methods_compared': methods,
+            'results': comparison_results,
+            'data_length': len(oil_data)
+        })
+    
+    except Exception as e:
+        logger.error(f"Error in model comparison: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/bayesian-analysis')
+def get_bayesian_analysis():
+    """Run Bayesian change point analysis with uncertainty quantification"""
+    try:
+        oil_data = get_oil_data()
+        if oil_data is None:
+            return jsonify({'success': False, 'error': 'Oil data not available'}), 500
+        
+        # Use simplified Bayesian model
+        try:
+            from task2.bayesian_model_simple import BayesianChangePoint
+            
+            # Use recent data for faster computation
+            recent_data = oil_data.tail(500).copy()
+            
+            bayesian_model = BayesianChangePoint(data=recent_data.rename(columns={'Date': 'Date', 'Price': 'Price'}))
+            change_points = bayesian_model.detect_change_points()
+            impact = bayesian_model.quantify_impact()
+            
+            return jsonify({
+                'success': True,
+                'method': 'Bayesian (Simplified)',
+                'change_points': change_points,
+                'impact_analysis': impact,
+                'data_used': {
+                    'length': len(recent_data),
+                    'date_range': {
+                        'start': recent_data['Date'].min().strftime('%Y-%m-%d'),
+                        'end': recent_data['Date'].max().strftime('%Y-%m-%d')
+                    }
+                }
+            })
+        
+        except ImportError:
+            return jsonify({
+                'success': False, 
+                'error': 'Bayesian analysis module not available'
+            }), 500
+    
+    except Exception as e:
+        logger.error(f"Error in Bayesian analysis: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/model-evaluation')
+def get_model_evaluation():
+    """
+    Get comprehensive model evaluation and comparison
+    Returns: JSON with method comparison and performance metrics
+    """
+    try:
+        oil_data = get_oil_data()
+        if oil_data is None:
+            return jsonify({'success': False, 'error': 'Failed to load data'}), 500
+        
+        # Import evaluator
+        try:
+            from change_point_evaluator import ChangePointEvaluator
+            evaluator = ChangePointEvaluator(oil_data.rename(columns={'Date': 'date', 'Price': 'price'}))
+            
+            # Run multiple methods
+            methods_results = {}
+            for method in ['pelt', 'binseg', 'window']:
+                try:
+                    cp_model = ChangePointModel(oil_data.rename(columns={'Date': 'date', 'Price': 'price'}), method=method)
+                    results = cp_model.detect_change_points(penalty=10.0)
+                    methods_results[method.upper()] = results.get('change_points', [])
+                except Exception as e:
+                    logger.warning(f"Error with method {method}: {e}")
+                    methods_results[method.upper()] = []
+            
+            # Compare methods
+            comparison = evaluator.compare_methods(methods_results)
+            
+            # Get assumptions validation
+            assumptions = evaluator.explain_model_assumptions()
+            
+            return jsonify({
+                'success': True,
+                'data': {
+                    'method_comparison': comparison,
+                    'model_assumptions': assumptions,
+                    'methods_tested': list(methods_results.keys())
+                }
+            })
+            
+        except ImportError:
+            return jsonify({'success': False, 'error': 'Model evaluation module not available'}), 500
+    
+    except Exception as e:
+        logger.error(f"Error in model evaluation: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/bayesian-analysis')
+def get_bayesian_analysis():
+    """
+    Get Bayesian change point analysis with uncertainty quantification
+    Returns: JSON with posterior distributions and credible intervals
+    """
+    try:
+        oil_data = get_oil_data()
+        if oil_data is None:
+            return jsonify({'success': False, 'error': 'Failed to load data'}), 500
+        
+        # Use recent data for faster computation
+        recent_data = oil_data.tail(500)
+        prices = recent_data['Price'].values
+        
+        try:
+            from task2.bayesian_inference import BayesianChangePointMCMC
+            
+            # Run Bayesian analysis
+            bayesian_model = BayesianChangePointMCMC(prices, max_changepoints=3)
+            mcmc_results = bayesian_model.mcmc_sample(n_samples=1000, burn_in=200)
+            point_estimates = bayesian_model.get_point_estimates()
+            
+            # Convert to API format
+            bayesian_results = {
+                'most_probable_changepoints': point_estimates.get('most_probable_changepoints', []),
+                'changepoint_probabilities': point_estimates.get('changepoint_probabilities', {}),
+                'posterior_stats': mcmc_results['posterior_stats'],
+                'acceptance_rate': mcmc_results['acceptance_rate'],
+                'n_samples': mcmc_results['n_samples']
+            }
+            
+            return jsonify({
+                'success': True,
+                'data': bayesian_results,
+                'method': 'Bayesian MCMC',
+                'data_period': {
+                    'start': recent_data['Date'].min().strftime('%Y-%m-%d'),
+                    'end': recent_data['Date'].max().strftime('%Y-%m-%d'),
+                    'n_observations': len(recent_data)
+                }
+            })
+            
+        except ImportError:
+            return jsonify({'success': False, 'error': 'Bayesian analysis module not available'}), 500
+    
+    except Exception as e:
+        logger.error(f"Error in Bayesian analysis: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/event-impact-analysis')
 def get_event_impact_analysis():
     """
@@ -464,5 +903,8 @@ if __name__ == '__main__':
     logger.info("  GET /api/change-points - Change point analysis")
     logger.info("  GET /api/analysis-summary - Comprehensive summary")
     logger.info("  GET /api/event-impact-analysis - Event impact analysis")
+    logger.info("  POST /api/detect - Custom change point detection")
+    logger.info("  POST /api/upload - Upload time series data")
+    logger.info("  GET /api/methods-comparison - Compare detection methods")
     
     app.run(debug=True, port=5000, host='0.0.0.0')
