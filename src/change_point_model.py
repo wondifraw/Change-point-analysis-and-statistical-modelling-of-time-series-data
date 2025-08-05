@@ -46,68 +46,200 @@ class ChangePointModel:
     statistical validation and performance evaluation. It provides robust detection
     of regime changes in time series data with quantitative impact analysis.
     
+    The model uses sophisticated algorithms to identify points in time where the
+    statistical properties of the time series change significantly, indicating
+    potential regime shifts in oil market dynamics.
+    
     Supported Methods:
         - PELT (Pruned Exact Linear Time): Optimal segmentation with dynamic programming
-        - Binary Segmentation: Recursive splitting approach
-        - Sliding Window: Statistical test-based detection
+          Uses penalized likelihood to find optimal number and location of change points
+        - Binary Segmentation: Recursive splitting approach that iteratively finds
+          the most significant change point and splits the series
+        - Sliding Window: Statistical test-based detection using moving window analysis
+          with hypothesis testing for structural breaks
     
     Attributes:
-        data (pd.DataFrame): Input time series data with 'date' and 'price' columns
-        method (str): Selected detection method
-        change_points (List[int]): Detected change point indices
-        model_results (Dict): Comprehensive analysis results
+        input_time_series_data (pd.DataFrame): Input time series with 'date' and 'price' columns
+        detection_method (str): Selected algorithmic approach for change point detection
+        detected_change_point_indices (List[int]): Temporal indices of identified structural breaks
+        comprehensive_model_results (Dict): Complete analysis results with statistical measures
+        validation_logger (logging.Logger): Logging instance for model diagnostics
         
     Example:
-        >>> data = pd.DataFrame({'date': dates, 'price': prices})
-        >>> model = ChangePointModel(data, method='pelt')
-        >>> results = model.detect_change_points(penalty=10.0)
-        >>> print(f"Detected {len(results.change_points)} change points")
+        >>> oil_price_data = pd.DataFrame({'date': trading_dates, 'price': brent_prices})
+        >>> cp_detector = ChangePointModel(oil_price_data, method='pelt')
+        >>> detection_results = cp_detector.detect_change_points(penalty=10.0)
+        >>> print(f"Identified {len(detection_results.change_points)} structural breaks")
     """
     
     def __init__(self, data: pd.DataFrame, method: str = 'pelt') -> None:
         """
-        Initialize change point detection model with validation.
+        Initialize change point detection model with comprehensive input validation.
+        
+        Performs rigorous validation of input data structure and content to ensure
+        robust analysis. Creates defensive copies to prevent external data mutations
+        that could compromise analysis integrity.
         
         Args:
             data (pd.DataFrame): Time series data with required columns ['date', 'price']
-            method (str): Detection method - 'pelt', 'binseg', or 'window'
+                               Must contain chronologically ordered observations
+            method (str): Detection algorithm - 'pelt', 'binseg', or 'window'
+                         Each method has different computational complexity and accuracy
             
         Raises:
-            ValueError: If data is empty or missing required columns
-            TypeError: If data is not a pandas DataFrame
+            ValueError: If data is empty, missing required columns, or has insufficient observations
+            TypeError: If data is not a pandas DataFrame instance
+            
+        Note:
+            The model requires minimum 10 observations for reliable change point detection.
+            Data is automatically sorted by date to ensure temporal consistency.
         """
-        self._validate_input_data(data)
-        self.data = data.copy()  # Defensive copy to prevent external modifications
-        self.method = self._validate_method(method)
-        self.change_points: List[int] = []
-        self.model_results: Dict = {}
-        self._logger = logging.getLogger(__name__)
+        # Comprehensive input validation with detailed error reporting
+        self._validate_input_data_structure_and_content(data)
         
-    def _validate_input_data(self, data: pd.DataFrame) -> None:
-        """Validate input data structure and content"""
-        if not isinstance(data, pd.DataFrame):
-            raise TypeError("Data must be a pandas DataFrame")
+        # Create defensive copy to prevent external mutations affecting analysis
+        self.input_time_series_data = data.copy().sort_values('date').reset_index(drop=True)
         
-        required_columns = ['date', 'price']
-        missing_columns = [col for col in required_columns if col not in data.columns]
-        if missing_columns:
-            raise ValueError(f"Missing required columns: {missing_columns}")
+        # Validate and normalize detection method specification
+        self.detection_method = self._validate_and_normalize_method(method)
+        
+        # Initialize analysis state containers
+        self.detected_change_point_indices: List[int] = []
+        self.comprehensive_model_results: Dict = {}
+        
+        # Configure logging for model diagnostics and debugging
+        self.validation_logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        
+    def _validate_input_data_structure_and_content(self, input_data: pd.DataFrame) -> None:
+        """
+        Perform comprehensive validation of input time series data structure and content.
+        
+        Validates data type, required columns, data quality, and statistical properties
+        necessary for reliable change point detection. Ensures data meets minimum
+        requirements for robust statistical analysis.
+        
+        Args:
+            input_data (pd.DataFrame): Time series data to validate
             
-        if len(data) < 10:
-            raise ValueError("Insufficient data points for change point detection (minimum: 10)")
+        Raises:
+            TypeError: If input is not a pandas DataFrame
+            ValueError: If data structure, content, or quality is insufficient
             
-        if data['price'].isna().any():
-            raise ValueError("Price data contains NaN values")
+        Note:
+            Validation includes checks for temporal ordering, missing values,
+            data sufficiency, and basic statistical properties.
+        """
+        # Validate fundamental data type requirements
+        if not isinstance(input_data, pd.DataFrame):
+            raise TypeError("Input data must be a pandas DataFrame instance for proper handling")
+        
+        # Verify presence of essential columns for time series analysis
+        required_column_names = ['date', 'price']
+        missing_column_names = [col for col in required_column_names if col not in input_data.columns]
+        if missing_column_names:
+            raise ValueError(f"Missing required columns for analysis: {missing_column_names}. "
+                           f"Available columns: {list(input_data.columns)}")
             
-    def _validate_method(self, method: str) -> str:
-        """Validate and normalize detection method"""
-        valid_methods = ['pelt', 'binseg', 'window']
-        method_lower = method.lower()
-        if method_lower not in valid_methods:
-            raise ValueError(f"Invalid method '{method}'. Choose from: {valid_methods}")
-        return method_lower
+        # Ensure sufficient data volume for statistical reliability
+        minimum_observations_required = 10
+        if len(input_data) < minimum_observations_required:
+            raise ValueError(f"Insufficient observations for reliable change point detection. "
+                           f"Required: {minimum_observations_required}, Provided: {len(input_data)}")
+            
+        # Validate data quality and completeness
+        if input_data['price'].isna().any():
+            nan_count = input_data['price'].isna().sum()
+            raise ValueError(f"Price data contains {nan_count} NaN values which compromise analysis integrity")
+            
+        # Verify temporal data can be properly parsed
+        try:
+            pd.to_datetime(input_data['date'])
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Date column contains invalid temporal data: {str(e)}")
+            
+        # Check for basic statistical validity
+        if input_data['price'].std() == 0:
+            raise ValueError("Price data shows zero variance - no change points can be detected")
+            
+        # Verify positive price values for financial data
+        if (input_data['price'] <= 0).any():
+            negative_count = (input_data['price'] <= 0).sum()
+            self.validation_logger.warning(f"Found {negative_count} non-positive price values which may indicate data quality issues")
+            
+    def _validate_and_normalize_method(self, detection_method_name: str) -> str:
+        """
+        Validate and normalize change point detection method specification.
+        
+        Ensures the requested detection algorithm is supported and properly configured.
+        Provides clear error messages for invalid method specifications.
+        
+        Args:
+            detection_method_name (str): Name of detection algorithm to validate
+            
+        Returns:
+            str: Normalized method name in lowercase format
+            
+        Raises:
+            ValueError: If method name is not supported
+            
+        Note:
+            Supported methods each have different computational complexity and accuracy:
+            - 'pelt': Optimal for most cases, O(n log n) complexity
+            - 'binseg': Fast recursive approach, O(n log n) complexity  
+            - 'window': Statistical test-based, O(n²) complexity
+        """
+        # Define supported detection algorithms with their characteristics
+        supported_detection_methods = {
+            'pelt': 'Pruned Exact Linear Time - optimal segmentation',
+            'binseg': 'Binary Segmentation - recursive splitting',
+            'window': 'Sliding Window - statistical test-based'
+        }
+        
+        # Normalize method name for consistent processing
+        normalized_method_name = detection_method_name.lower().strip()
+        
+        # Validate method is supported
+        if normalized_method_name not in supported_detection_methods:
+            available_methods = list(supported_detection_methods.keys())
+            method_descriptions = [f"'{method}': {desc}" for method, desc in supported_detection_methods.items()]
+            raise ValueError(
+                f"Unsupported detection method '{detection_method_name}'. "
+                f"Available methods: {available_methods}. "
+                f"Method descriptions: {'; '.join(method_descriptions)}"
+            )
+            
+        return normalized_method_name
     
-    def detect_change_points(self, penalty: float = 10.0, **kwargs) -> ChangePointDetectionResult:
+    def detect_change_points(self, penalty_parameter: float = 10.0, **additional_method_kwargs) -> ChangePointDetectionResult:
+        """
+        Execute change point detection using specified algorithm with statistical validation.
+        
+        This method orchestrates the complete change point detection workflow,
+        including algorithm execution, result validation, and statistical significance testing.
+        The penalty parameter controls the trade-off between model complexity and fit quality.
+        
+        Args:
+            penalty_parameter (float): Regularization strength controlling detection sensitivity
+                                     Higher values reduce false positives but may miss true changes
+                                     Typical range: 1.0 (sensitive) to 50.0 (conservative)
+            **additional_method_kwargs: Algorithm-specific parameters passed to detection method
+                                      e.g., window_size for sliding window, max_segments for binseg
+        
+        Returns:
+            ChangePointDetectionResult: Structured container with:
+                - change_points: List of temporal indices where breaks occur
+                - change_dates: Human-readable dates of detected breaks
+                - confidence_scores: Statistical confidence for each detection
+                - method_metadata: Algorithm-specific diagnostic information
+                
+        Raises:
+            RuntimeError: If detection algorithm fails or produces invalid results
+            ValueError: If penalty parameter is outside valid range
+            
+        Note:
+            Results include comprehensive statistical validation and uncertainty quantification.
+            Use higher penalty values for conservative detection in noisy data.
+        """
         """
         Detect change points in the time series.
         

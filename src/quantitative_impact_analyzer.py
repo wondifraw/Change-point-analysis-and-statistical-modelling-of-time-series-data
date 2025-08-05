@@ -70,16 +70,22 @@ class QuantitativeImpactAnalyzer:
         return impacts
     
     def _analyze_single_impact(self, cp_idx: int) -> ImpactMetrics:
-        """Analyze impact of a single change point"""
-        # Define segments
+        """Analyze quantitative impact of a single change point with Bayesian credible intervals"""
+        # Define temporal segments around change point
         before_segment = self.prices[:cp_idx]
         after_segment = self.prices[cp_idx:]
         
-        # Basic statistics
+        # Calculate fundamental statistical moments
         mean_before = np.mean(before_segment)
         mean_after = np.mean(after_segment)
         var_before = np.var(before_segment, ddof=1)
         var_after = np.var(after_segment, ddof=1)
+        
+        # Bayesian posterior credible intervals for change point location
+        posterior_ci = self._calculate_posterior_credible_interval(cp_idx)
+        
+        # Effect size measures using multiple metrics
+        effect_sizes = self._calculate_comprehensive_effect_sizes(before_segment, after_segment)
         
         # Calculate changes
         mean_change_abs = mean_after - mean_before
@@ -124,8 +130,185 @@ class QuantitativeImpactAnalyzer:
             p_value=p_val,
             effect_size_cohens_d=cohens_d,
             mean_diff_ci_lower=ci_lower,
-            mean_diff_ci_upper=ci_upper
+            mean_diff_ci_upper=ci_upper,
+            posterior_credible_interval=posterior_ci,
+            comprehensive_effect_sizes=effect_sizes
         )
+    
+    def _calculate_posterior_credible_interval(self, cp_idx: int, confidence: float = 0.95) -> Tuple[int, int]:
+        """Calculate Bayesian posterior credible interval for change point location"""
+        # Simplified Bayesian approach using likelihood-based confidence region
+        window_size = min(50, len(self.prices) // 10)  # Adaptive window size
+        
+        # Calculate likelihood profile around change point
+        likelihood_profile = []
+        test_points = range(max(0, cp_idx - window_size), 
+                          min(len(self.prices), cp_idx + window_size + 1))
+        
+        for test_cp in test_points:
+            if test_cp <= 10 or test_cp >= len(self.prices) - 10:
+                likelihood_profile.append(-np.inf)
+                continue
+                
+            # Calculate log-likelihood for this change point location
+            before_seg = self.prices[:test_cp]
+            after_seg = self.prices[test_cp:]
+            
+            if len(before_seg) > 0 and len(after_seg) > 0:
+                # Gaussian likelihood assuming different means and variances
+                ll_before = -0.5 * len(before_seg) * np.log(2 * np.pi * np.var(before_seg))
+                ll_before -= 0.5 * np.sum((before_seg - np.mean(before_seg))**2) / np.var(before_seg)
+                
+                ll_after = -0.5 * len(after_seg) * np.log(2 * np.pi * np.var(after_seg))
+                ll_after -= 0.5 * np.sum((after_seg - np.mean(after_seg))**2) / np.var(after_seg)
+                
+                likelihood_profile.append(ll_before + ll_after)
+            else:
+                likelihood_profile.append(-np.inf)
+        
+        # Convert to posterior probabilities (uniform prior)
+        log_probs = np.array(likelihood_profile)
+        log_probs = log_probs - np.max(log_probs)  # Numerical stability
+        probs = np.exp(log_probs)
+        probs = probs / np.sum(probs)
+        
+        # Calculate credible interval
+        cumsum = np.cumsum(probs)
+        alpha = 1 - confidence
+        lower_idx = np.searchsorted(cumsum, alpha/2)
+        upper_idx = np.searchsorted(cumsum, 1 - alpha/2)
+        
+        lower_bound = test_points[min(lower_idx, len(test_points)-1)]
+        upper_bound = test_points[min(upper_idx, len(test_points)-1)]
+        
+        return (lower_bound, upper_bound)
+    
+    def _calculate_comprehensive_effect_sizes(self, before_seg: np.ndarray, after_seg: np.ndarray) -> Dict[str, float]:
+        """Calculate multiple effect size measures for comprehensive impact assessment"""
+        effect_sizes = {}
+        
+        # Cohen's d (standardized mean difference)
+        pooled_std = np.sqrt(((len(before_seg) - 1) * np.var(before_seg, ddof=1) + 
+                             (len(after_seg) - 1) * np.var(after_seg, ddof=1)) / 
+                            (len(before_seg) + len(after_seg) - 2))
+        
+        if pooled_std > 0:
+            effect_sizes['cohens_d'] = (np.mean(after_seg) - np.mean(before_seg)) / pooled_std
+        else:
+            effect_sizes['cohens_d'] = 0.0
+        
+        # Glass's delta (uses control group standard deviation)
+        if np.std(before_seg) > 0:
+            effect_sizes['glass_delta'] = (np.mean(after_seg) - np.mean(before_seg)) / np.std(before_seg)
+        else:
+            effect_sizes['glass_delta'] = 0.0
+        
+        # Hedges' g (bias-corrected Cohen's d)
+        correction_factor = 1 - (3 / (4 * (len(before_seg) + len(after_seg)) - 9))
+        effect_sizes['hedges_g'] = effect_sizes['cohens_d'] * correction_factor
+        
+        # Common Language Effect Size (probability of superiority)
+        if len(before_seg) > 0 and len(after_seg) > 0:
+            comparisons = np.array([after_val > before_val 
+                                  for after_val in after_seg 
+                                  for before_val in before_seg])
+            effect_sizes['cles'] = np.mean(comparisons)
+        else:
+            effect_sizes['cles'] = 0.5
+        
+        # Variance ratio (F-statistic based)
+        var_before = np.var(before_seg, ddof=1)
+        var_after = np.var(after_seg, ddof=1)
+        if var_before > 0:
+            effect_sizes['variance_ratio'] = var_after / var_before
+        else:
+            effect_sizes['variance_ratio'] = 1.0
+        
+        return effect_sizes
+    
+    def perform_systematic_event_alignment_test(self, events_df: pd.DataFrame, 
+                                              tolerance_days: int = 30) -> Dict:
+        """Systematic statistical test for change point-event alignment"""
+        alignment_results = {
+            'total_change_points': len(self.change_points),
+            'aligned_points': 0,
+            'alignment_statistics': [],
+            'permutation_test_p_value': None,
+            'systematic_bias': None
+        }
+        
+        if len(self.change_points) == 0 or len(events_df) == 0:
+            return alignment_results
+        
+        # Calculate actual alignments
+        actual_alignments = []
+        for cp_idx in self.change_points:
+            cp_date = self.data.iloc[cp_idx]['date']
+            
+            # Find closest event within tolerance
+            time_diffs = abs((events_df['date'] - cp_date).dt.days)
+            min_diff = time_diffs.min()
+            
+            if min_diff <= tolerance_days:
+                actual_alignments.append(min_diff)
+                alignment_results['aligned_points'] += 1
+        
+        # Permutation test for statistical significance
+        if len(actual_alignments) > 0:
+            alignment_results['permutation_test_p_value'] = self._permutation_test_alignment(
+                actual_alignments, events_df, tolerance_days
+            )
+        
+        # Test for systematic temporal bias
+        if len(actual_alignments) >= 3:
+            # Calculate if change points systematically occur before/after events
+            signed_diffs = []
+            for cp_idx in self.change_points:
+                cp_date = self.data.iloc[cp_idx]['date']
+                time_diffs = (events_df['date'] - cp_date).dt.days
+                closest_event_idx = time_diffs.abs().idxmin()
+                signed_diffs.append(time_diffs.iloc[closest_event_idx])
+            
+            # One-sample t-test against zero (no systematic bias)
+            from scipy import stats
+            t_stat, p_val = stats.ttest_1samp(signed_diffs, 0)
+            alignment_results['systematic_bias'] = {
+                'mean_offset_days': np.mean(signed_diffs),
+                't_statistic': t_stat,
+                'p_value': p_val,
+                'interpretation': 'Change points occur systematically ' + 
+                               ('after' if np.mean(signed_diffs) > 0 else 'before') + 
+                               ' events' if p_val < 0.05 else 'No systematic bias detected'
+            }
+        
+        return alignment_results
+    
+    def _permutation_test_alignment(self, actual_alignments: List[float], 
+                                  events_df: pd.DataFrame, tolerance_days: int, 
+                                  n_permutations: int = 1000) -> float:
+        """Permutation test to assess statistical significance of event alignment"""
+        actual_alignment_rate = len(actual_alignments) / len(self.change_points)
+        
+        # Generate null distribution by randomly permuting change point dates
+        null_alignment_rates = []
+        
+        for _ in range(n_permutations):
+            # Randomly shuffle change point indices
+            random_cp_indices = np.random.choice(len(self.data), len(self.change_points), replace=False)
+            
+            # Count alignments for random change points
+            random_alignments = 0
+            for cp_idx in random_cp_indices:
+                cp_date = self.data.iloc[cp_idx]['date']
+                time_diffs = abs((events_df['date'] - cp_date).dt.days)
+                if time_diffs.min() <= tolerance_days:
+                    random_alignments += 1
+            
+            null_alignment_rates.append(random_alignments / len(self.change_points))
+        
+        # Calculate p-value
+        p_value = np.mean(np.array(null_alignment_rates) >= actual_alignment_rate)
+        return p_value
     
     def _calculate_volatility(self, prices: np.ndarray) -> float:
         """Calculate annualized volatility from price series"""
