@@ -6,79 +6,440 @@
     <title>Brent Oil Price Analysis Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .card { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.2s; }
-        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-        .stat-item { text-align: center; padding: 15px; background: #f8f9fa; border-radius: 5px; transition: background 0.3s; }
-        .stat-item:hover { background: #e9ecef; }
-        .stat-value { font-size: 24px; font-weight: bold; color: #007bff; }
-        .chart-container { height: 400px; margin: 20px 0; position: relative; }
-        .events-list { max-height: 300px; overflow-y: auto; }
-        .event-item { padding: 10px; border-left: 4px solid #007bff; margin: 5px 0; background: #f8f9fa; cursor: pointer; transition: background 0.2s; }
-        .event-item:hover { background: #e9ecef; }
-        .loading { text-align: center; color: #666; }
-        .controls { margin: 20px 0; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
-        .control-group { display: flex; flex-direction: column; gap: 5px; }
-        .control-group label { font-weight: bold; color: #495057; }
-        .control-group select, .control-group input { padding: 8px; border: 1px solid #ced4da; border-radius: 4px; }
-        .btn { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
-        .btn:hover { background: #0056b3; }
-        .btn-secondary { background: #6c757d; }
-        .btn-secondary:hover { background: #545b62; }
-        .upload-area { border: 2px dashed #ced4da; padding: 40px; text-align: center; border-radius: 8px; margin: 20px 0; transition: border-color 0.3s; }
-        .upload-area:hover { border-color: #007bff; }
-        .upload-area.dragover { border-color: #007bff; background: #f8f9fa; }
-        .method-comparison { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .method-card { padding: 15px; border: 1px solid #dee2e6; border-radius: 8px; background: #f8f9fa; }
-        .progress-bar { width: 100%; height: 20px; background: #e9ecef; border-radius: 10px; overflow: hidden; margin: 10px 0; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #007bff, #0056b3); transition: width 0.3s; }
+        /* Professional Dashboard Styling with Responsive Design */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+        
+        .header { 
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .header h1 { 
+            font-size: 2.5rem; 
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header p { 
+            font-size: 1.2rem; 
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .card { 
+            background: white; 
+            margin: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        
+        .card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15); 
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px 30px;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+            font-size: 1.3rem;
+            color: #495057;
+        }
+        
+        .card-body {
+            padding: 30px;
+        }
+        
+        .stats { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 25px; 
+        }
+        
+        .stat-item { 
+            text-align: center; 
+            padding: 25px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px; 
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .stat-item:hover { 
+            transform: translateY(-3px) scale(1.02); 
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .stat-value { 
+            font-size: 2.5rem; 
+            font-weight: 700; 
+            margin-bottom: 8px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        .stat-label {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .chart-container { 
+            height: 500px; 
+            margin: 20px 0; 
+            position: relative;
+            background: #fafafa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .advanced-controls {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border: 1px solid #dee2e6;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: end;
+        }
+        
+        .control-group { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+        }
+        
+        .control-group label { 
+            font-weight: 600; 
+            color: #495057;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .control-group select, .control-group input { 
+            padding: 12px 15px; 
+            border: 2px solid #e9ecef; 
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .control-group select:focus, .control-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn { 
+            padding: 12px 25px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary { 
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        }
+        
+        .btn-secondary:hover { 
+            box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+        }
+        
+        .timeline-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+        
+        .date-range-slider {
+            flex: 1;
+            margin: 0 15px;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .zoom-btn {
+            padding: 8px 12px;
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+        }
+        
+        .zoom-btn:hover, .zoom-btn.active {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+        
+        .events-filter {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .filter-chip {
+            padding: 6px 12px;
+            background: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            user-select: none;
+        }
+        
+        .filter-chip:hover {
+            background: #dee2e6;
+        }
+        
+        .filter-chip.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .events-list { 
+            max-height: 400px; 
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .events-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .events-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .events-list::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 3px;
+        }
+        
+        .event-item { 
+            padding: 15px; 
+            border-left: 4px solid #667eea; 
+            margin: 10px 0; 
+            background: white;
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .event-item:hover { 
+            background: #f8f9fa;
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .event-item.high-impact {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.05) 0%, rgba(220, 53, 69, 0.02) 100%);
+        }
+        
+        .event-item.medium-impact {
+            border-left-color: #ffc107;
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.05) 0%, rgba(255, 193, 7, 0.02) 100%);
+        }
+        
+        .loading { 
+            text-align: center; 
+            color: #6c757d;
+            padding: 40px;
+            font-size: 1.1rem;
+        }
+        
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container { margin: 10px; border-radius: 15px; }
+            .header { padding: 30px 20px; }
+            .header h1 { font-size: 2rem; }
+            .card { margin: 20px 15px; }
+            .card-body { padding: 20px; }
+            .stats { grid-template-columns: 1fr; }
+            .controls-grid { grid-template-columns: 1fr; }
+            .timeline-controls { flex-direction: column; gap: 15px; }
+            .chart-container { height: 300px; }
+        }
+        
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .header h1 { font-size: 1.5rem; }
+            .stat-value { font-size: 2rem; }
+            .btn { padding: 10px 20px; font-size: 0.9rem; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🛢️ Brent Oil Price Analysis Dashboard</h1>
-            <p>Advanced Change Point Detection & Geopolitical Events Analysis</p>
-            <p><small>💡 Tip: Use Ctrl+D for quick detection, Ctrl+C for method comparison</small></p>
+            <h1>🛢️ Brent Oil Market Intelligence</h1>
+            <p>Advanced Structural Break Analysis & Geopolitical Risk Assessment</p>
+            <p><small>💡 Keyboard Shortcuts: Ctrl+D (Detection) | Ctrl+C (Compare) | Ctrl+R (Refresh)</small></p>
         </div>
 
         <div class="card">
-            <h2>📊 Summary Statistics</h2>
-            <div id="summary-stats" class="stats">
-                <div class="loading">Loading statistics...</div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>📈 Oil Price Timeline</h2>
-            <div class="chart-container">
-                <canvas id="priceChart"></canvas>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>🎯 Change Points Detected</h2>
-            <div class="controls">
-                <div class="control-group">
-                    <label for="method-select">Detection Method:</label>
-                    <select id="method-select">
-                        <option value="pelt">PELT</option>
-                        <option value="binseg">Binary Segmentation</option>
-                        <option value="window">Sliding Window</option>
-                    </select>
+            <div class="card-header">📊 Market Intelligence Dashboard</div>
+            <div class="card-body">
+                <div id="summary-stats" class="stats">
+                    <div class="loading">Loading market intelligence...</div>
                 </div>
-                <div class="control-group">
-                    <label for="penalty-input">Penalty Parameter:</label>
-                    <input type="number" id="penalty-input" value="10" min="1" max="100" step="1">
-                </div>
-                <button class="btn" onclick="runCustomDetection()">🔍 Detect Change Points</button>
-                <button class="btn btn-secondary" onclick="compareAllMethods()">📊 Compare Methods</button>
             </div>
-            <div id="change-points">
-                <div class="loading">Loading change points...</div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">📈 Interactive Price Analysis</div>
+            <div class="card-body">
+                <div class="timeline-controls">
+                    <label>Time Range:</label>
+                    <input type="date" id="start-date" class="date-input">
+                    <span>to</span>
+                    <input type="date" id="end-date" class="date-input">
+                    <div class="zoom-controls">
+                        <div class="zoom-btn" onclick="setTimeRange('1Y')">1Y</div>
+                        <div class="zoom-btn" onclick="setTimeRange('2Y')">2Y</div>
+                        <div class="zoom-btn" onclick="setTimeRange('5Y')">5Y</div>
+                        <div class="zoom-btn active" onclick="setTimeRange('ALL')">ALL</div>
+                    </div>
+                    <button class="btn" onclick="updateChart()">Update Chart</button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">🎯 Advanced Change Point Detection</div>
+            <div class="card-body">
+                <div class="advanced-controls">
+                    <div class="controls-grid">
+                        <div class="control-group">
+                            <label for="method-select">Detection Algorithm:</label>
+                            <select id="method-select">
+                                <option value="pelt">PELT (Optimal)</option>
+                                <option value="binseg">Binary Segmentation</option>
+                                <option value="window">Sliding Window</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="penalty-input">Sensitivity (1-100):</label>
+                            <input type="range" id="penalty-slider" min="1" max="100" value="10" oninput="updatePenaltyValue(this.value)">
+                            <input type="number" id="penalty-input" value="10" min="1" max="100" step="1" onchange="updatePenaltySlider(this.value)">
+                        </div>
+                        <div class="control-group">
+                            <label for="confidence-threshold">Confidence Threshold:</label>
+                            <select id="confidence-threshold">
+                                <option value="0.90">90%</option>
+                                <option value="0.95" selected>95%</option>
+                                <option value="0.99">99%</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <button class="btn" onclick="runCustomDetection()">🔍 Detect Changes</button>
+                            <button class="btn btn-secondary" onclick="compareAllMethods()">📊 Compare Methods</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="change-points">
+                    <div class="loading">Analyzing structural breaks...</div>
+                </div>
             </div>
         </div>
 
@@ -100,9 +461,18 @@
         </div>
 
         <div class="card">
-            <h2>🌍 Major Geopolitical Events</h2>
-            <div id="events-list" class="events-list">
-                <div class="loading">Loading events...</div>
+            <div class="card-header">🌍 Geopolitical Events Analysis</div>
+            <div class="card-body">
+                <div class="events-filter">
+                    <div class="filter-chip active" onclick="filterEvents('all')">All Events</div>
+                    <div class="filter-chip" onclick="filterEvents('Geopolitical')">Geopolitical</div>
+                    <div class="filter-chip" onclick="filterEvents('Economic')">Economic</div>
+                    <div class="filter-chip" onclick="filterEvents('OPEC Decision')">OPEC</div>
+                    <div class="filter-chip" onclick="filterEvents('High')">High Impact</div>
+                </div>
+                <div id="events-list" class="events-list">
+                    <div class="loading">Loading geopolitical intelligence...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -110,7 +480,7 @@
     <script>
         const API_BASE = 'http://127.0.0.1:5000/api';
 
-        // Load summary statistics
+        // Enhanced summary statistics with professional formatting
         async function loadSummary() {
             try {
                 const response = await fetch(`${API_BASE}/analysis-summary`);
@@ -118,68 +488,298 @@
                 
                 if (data.success) {
                     const stats = data.data;
+                    const volatilityColor = stats.price_statistics.volatility > 0.02 ? '#dc3545' : '#28a745';
+                    const changePointsColor = stats.analysis_results.change_points_detected > 5 ? '#ffc107' : '#007bff';
+                    
                     document.getElementById('summary-stats').innerHTML = `
-                        <div class="stat-item">
+                        <div class="stat-item" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);">
                             <div class="stat-value">${stats.data_overview.total_observations.toLocaleString()}</div>
-                            <div>Total Observations</div>
+                            <div class="stat-label">Market Observations</div>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item" style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);">
                             <div class="stat-value">$${stats.price_statistics.mean.toFixed(2)}</div>
-                            <div>Average Price</div>
+                            <div class="stat-label">Average Price</div>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item" style="background: linear-gradient(135deg, ${changePointsColor} 0%, ${changePointsColor}dd 100%);">
                             <div class="stat-value">${stats.analysis_results.change_points_detected}</div>
-                            <div>Change Points</div>
+                            <div class="stat-label">Structural Breaks</div>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item" style="background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);">
                             <div class="stat-value">${stats.analysis_results.events_analyzed}</div>
-                            <div>Events Analyzed</div>
+                            <div class="stat-label">Events Analyzed</div>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item" style="background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%);">
                             <div class="stat-value">${stats.data_overview.years_covered}</div>
-                            <div>Years Covered</div>
+                            <div class="stat-label">Years Coverage</div>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item" style="background: linear-gradient(135deg, ${volatilityColor} 0%, ${volatilityColor}dd 100%);">
                             <div class="stat-value">${(stats.price_statistics.volatility * 100).toFixed(2)}%</div>
-                            <div>Daily Volatility</div>
+                            <div class="stat-label">Market Volatility</div>
                         </div>
                     `;
                 }
             } catch (error) {
-                document.getElementById('summary-stats').innerHTML = '<div style="color: red;">Error loading statistics</div>';
+                document.getElementById('summary-stats').innerHTML = '<div class="loading">Unable to load market intelligence</div>';
             }
         }
+        
+        // Advanced timeline controls
+        function setTimeRange(period) {
+            const endDate = new Date();
+            let startDate = new Date();
+            
+            // Remove active class from all zoom buttons
+            document.querySelectorAll('.zoom-btn').forEach(btn => btn.classList.remove('active'));
+            
+            switch(period) {
+                case '1Y':
+                    startDate.setFullYear(endDate.getFullYear() - 1);
+                    break;
+                case '2Y':
+                    startDate.setFullYear(endDate.getFullYear() - 2);
+                    break;
+                case '5Y':
+                    startDate.setFullYear(endDate.getFullYear() - 5);
+                    break;
+                case 'ALL':
+                default:
+                    startDate = new Date('2000-01-01');
+                    break;
+            }
+            
+            // Update date inputs
+            document.getElementById('start-date').value = startDate.toISOString().split('T')[0];
+            document.getElementById('end-date').value = endDate.toISOString().split('T')[0];
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            // Auto-update chart
+            updateChart();
+        }
+        
+        // Enhanced chart update with date filtering
+        async function updateChart() {
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            
+            if (startDate && endDate) {
+                await loadPriceChart(startDate, endDate);
+            } else {
+                await loadPriceChart();
+            }
+        }
+        
+        // Enhanced penalty control synchronization
+        function updatePenaltyValue(value) {
+            document.getElementById('penalty-input').value = value;
+        }
+        
+        function updatePenaltySlider(value) {
+            document.getElementById('penalty-slider').value = value;
+        }
+        
+        // Advanced event filtering
+        let currentEventFilter = 'all';
+        let allEventsData = [];
+        
+        function filterEvents(filterType) {
+            // Update active filter chip
+            document.querySelectorAll('.filter-chip').forEach(chip => chip.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            currentEventFilter = filterType;
+            displayFilteredEvents();
+        }
+        
+        function displayFilteredEvents() {
+            let filteredEvents = allEventsData;
+            
+            if (currentEventFilter !== 'all') {
+                if (currentEventFilter === 'High') {
+                    filteredEvents = allEventsData.filter(event => event.impact === 'High');
+                } else {
+                    filteredEvents = allEventsData.filter(event => event.category === currentEventFilter);
+                }
+            }
+            
+            const html = filteredEvents.map(event => {
+                const impactClass = event.impact === 'High' ? 'high-impact' : 
+                                  event.impact === 'Medium' ? 'medium-impact' : '';
+                
+                return `
+                    <div class="event-item ${impactClass}" onclick="highlightEventOnChart('${event.date}')">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <strong style="color: #2c3e50; font-size: 1.1rem;">${event.date}</strong>
+                            <span style="background: ${getImpactColor(event.impact)}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                                ${event.impact.toUpperCase()}
+                            </span>
+                        </div>
+                        <div style="font-weight: 600; color: #34495e; margin-bottom: 5px;">${event.event}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <small style="color: #7f8c8d; font-weight: 500;">${event.category}</small>
+                            <small style="color: #95a5a6;">${event.year}</small>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('events-list').innerHTML = html || '<div class="loading">No events match current filter</div>';
+        }
+        
+        function getImpactColor(impact) {
+            switch(impact) {
+                case 'High': return '#dc3545';
+                case 'Medium': return '#ffc107';
+                default: return '#6c757d';
+            }
+        }
+        
+        function highlightEventOnChart(eventDate) {
+            // Add visual highlight to chart for selected event
+            console.log('Highlighting event on chart:', eventDate);
+            // Implementation would integrate with Chart.js to add event marker
+        }
 
-        // Load and display price chart
-        async function loadPriceChart() {
+        // Enhanced price chart with professional styling and interactivity
+        let priceChart = null;
+        
+        async function loadPriceChart(startDate = '2020-01-01', endDate = null) {
             try {
-                const response = await fetch(`${API_BASE}/oil-prices?start_date=2020-01-01`);
+                let url = `${API_BASE}/oil-prices?start_date=${startDate}`;
+                if (endDate) {
+                    url += `&end_date=${endDate}`;
+                }
+                
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 if (data.success) {
                     const ctx = document.getElementById('priceChart').getContext('2d');
-                    new Chart(ctx, {
+                    
+                    // Destroy existing chart if it exists
+                    if (priceChart) {
+                        priceChart.destroy();
+                    }
+                    
+                    // Create gradient for line
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                    gradient.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
+                    gradient.addColorStop(1, 'rgba(102, 126, 234, 0.1)');
+                    
+                    priceChart = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: data.data.map(d => d.date),
                             datasets: [{
                                 label: 'Brent Oil Price (USD)',
                                 data: data.data.map(d => d.price),
-                                borderColor: '#007bff',
-                                backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                                tension: 0.1
+                                borderColor: '#667eea',
+                                backgroundColor: gradient,
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
+                                pointHoverBackgroundColor: '#667eea',
+                                pointHoverBorderColor: '#ffffff',
+                                pointHoverBorderWidth: 2
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+                            interaction: {
+                                intersect: false,
+                                mode: 'index'
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top',
+                                    labels: {
+                                        usePointStyle: true,
+                                        font: {
+                                            size: 14,
+                                            weight: '600'
+                                        },
+                                        color: '#495057'
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: '#ffffff',
+                                    bodyColor: '#ffffff',
+                                    borderColor: '#667eea',
+                                    borderWidth: 1,
+                                    cornerRadius: 8,
+                                    displayColors: false,
+                                    callbacks: {
+                                        title: function(context) {
+                                            return new Date(context[0].label).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric'
+                                            });
+                                        },
+                                        label: function(context) {
+                                            return `Price: $${context.parsed.y.toFixed(2)}`;
+                                        }
+                                    }
+                                }
+                            },
                             scales: {
                                 y: {
                                     beginAtZero: false,
-                                    title: { display: true, text: 'Price (USD)' }
+                                    title: { 
+                                        display: true, 
+                                        text: 'Price (USD)',
+                                        font: {
+                                            size: 14,
+                                            weight: '600'
+                                        },
+                                        color: '#495057'
+                                    },
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.05)',
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        font: {
+                                            size: 12
+                                        },
+                                        color: '#6c757d',
+                                        callback: function(value) {
+                                            return '$' + value.toFixed(0);
+                                        }
+                                    }
                                 },
                                 x: {
-                                    title: { display: true, text: 'Date' }
+                                    title: { 
+                                        display: true, 
+                                        text: 'Timeline',
+                                        font: {
+                                            size: 14,
+                                            weight: '600'
+                                        },
+                                        color: '#495057'
+                                    },
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.05)',
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        font: {
+                                            size: 12
+                                        },
+                                        color: '#6c757d',
+                                        maxTicksLimit: 8
+                                    }
+                                }
+                            },
+                            elements: {
+                                point: {
+                                    hoverRadius: 8
                                 }
                             }
                         }
@@ -187,6 +787,7 @@
                 }
             } catch (error) {
                 console.error('Error loading price chart:', error);
+                document.querySelector('.chart-container').innerHTML = '<div class="loading">Unable to load price data</div>';
             }
         }
 
@@ -409,45 +1010,123 @@
             console.log('Highlighting change point:', date);
         }
 
-        // Load events
+        // Enhanced events loading with filtering support
         async function loadEvents() {
             try {
                 const response = await fetch(`${API_BASE}/events`);
                 const data = await response.json();
                 
                 if (data.success) {
-                    const html = data.data.map(event => `
-                        <div class="event-item">
-                            <strong>${event.date}</strong> - ${event.event}<br>
-                            <small>Category: ${event.category} | Impact: ${event.impact}</small>
-                        </div>
-                    `).join('');
-                    document.getElementById('events-list').innerHTML = html;
+                    allEventsData = data.data;
+                    displayFilteredEvents();
+                    
+                    // Initialize date range inputs with data range
+                    if (allEventsData.length > 0) {
+                        const dates = allEventsData.map(e => new Date(e.date)).sort((a, b) => a - b);
+                        const minDate = dates[0].toISOString().split('T')[0];
+                        const maxDate = dates[dates.length - 1].toISOString().split('T')[0];
+                        
+                        document.getElementById('start-date').value = minDate;
+                        document.getElementById('end-date').value = maxDate;
+                    }
                 }
             } catch (error) {
-                document.getElementById('events-list').innerHTML = '<div style="color: red;">Error loading events</div>';
+                document.getElementById('events-list').innerHTML = '<div class="loading">Unable to load geopolitical data</div>';
             }
         }
 
-        // Initialize dashboard
+        // Enhanced dashboard initialization with progressive loading
         document.addEventListener('DOMContentLoaded', function() {
-            loadSummary();
-            loadPriceChart();
-            loadChangePoints();
-            loadEvents();
+            // Progressive loading with visual feedback
+            const loadingSequence = [
+                { fn: loadSummary, name: 'Market Intelligence' },
+                { fn: loadPriceChart, name: 'Price Analysis' },
+                { fn: loadChangePoints, name: 'Structural Analysis' },
+                { fn: loadEvents, name: 'Geopolitical Intelligence' }
+            ];
             
-            // Add keyboard shortcuts
+            // Load components sequentially with progress indication
+            loadingSequence.reduce((promise, { fn, name }) => {
+                return promise.then(() => {
+                    console.log(`Loading ${name}...`);
+                    return fn();
+                });
+            }, Promise.resolve());
+            
+            // Enhanced keyboard shortcuts with visual feedback
             document.addEventListener('keydown', function(e) {
                 if (e.ctrlKey && e.key === 'd') {
                     e.preventDefault();
+                    showToast('Running change point detection...');
                     runCustomDetection();
                 }
                 if (e.ctrlKey && e.key === 'c') {
                     e.preventDefault();
+                    showToast('Comparing detection methods...');
                     compareAllMethods();
                 }
+                if (e.ctrlKey && e.key === 'r') {
+                    e.preventDefault();
+                    showToast('Refreshing dashboard...');
+                    location.reload();
+                }
             });
+            
+            // Initialize tooltips and interactive elements
+            initializeInteractiveElements();
         });
+        
+        // Toast notification system
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                z-index: 10000;
+                font-weight: 600;
+                animation: slideIn 0.3s ease;
+            `;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }
+        
+        // Initialize interactive elements
+        function initializeInteractiveElements() {
+            // Add CSS animations
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Initialize date inputs with current date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('end-date').value = today;
+            
+            // Set default start date to 2 years ago
+            const twoYearsAgo = new Date();
+            twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+            document.getElementById('start-date').value = twoYearsAgo.toISOString().split('T')[0];
+        }
     </script>
 </body>
 </html>
